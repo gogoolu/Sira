@@ -1,0 +1,11 @@
+**/Intermediate/
+**/Binaries/
+.vs/
+.idea/
+.vsconfig/
+Build/
+DerivedDataCache/
+Saved/
+**/__ExternalActors__
+**/__ExternalObjects__
+/Content
