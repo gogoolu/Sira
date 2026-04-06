@@ -13,7 +13,7 @@ GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
 GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
 GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 
-UCLASS()
+UCLASS(BlueprintType, Blueprintable)
 class SIRA_API UBaseAttributeSet : public UAttributeSet
 {
 	GENERATED_BODY()

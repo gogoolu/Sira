@@ -4,6 +4,7 @@
 #include "Enemy/NormalEnemy.h"
 
 #include "AttributeSet/BaseAttributeSet.h"
+#include "Component/SiraAttributeComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Manager/SiraGameplayTags.h"
@@ -19,6 +20,7 @@ ANormalEnemy::ANormalEnemy()
 	{
 		MovementComp->MaxWalkSpeed = 300.0f;
 	}
+	SiraAttributeComponent = CreateDefaultSubobject<USiraAttributeComponent>(TEXT("Attribute"));
 }
 
 // Called when the game starts or when spawned
@@ -30,6 +32,7 @@ void ANormalEnemy::BeginPlay()
 		auto HPAttr = UBaseAttributeSet::GetHPAttribute();
 		ASC->RegisterGameplayTagEvent(FSiraGameplayTags::GetTag_LifeState_Dead()).AddUObject(this, &ANormalEnemy::OnDead);
 	}
+	SiraAttributeComponent->Init();
 }
 
 // Called every frame

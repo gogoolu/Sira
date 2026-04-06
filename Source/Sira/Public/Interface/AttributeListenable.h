@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "HealthListenable.generated.h"
+#include "AttributeListenable.generated.h"
 
 struct FGameplayAttribute;
 
@@ -18,9 +18,9 @@ class IAttributeListenable
 
 public:
 	
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void GetListenAttributes(TArray<FGameplayAttribute>& OutAttributes);
 	
-	UFUNCTION(BlueprintImplementableEvent, BlueprintCallable)
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void OnListenAttributeChanged(const FGameplayAttribute& Attribute, float NewValue, float OldValue);
 };

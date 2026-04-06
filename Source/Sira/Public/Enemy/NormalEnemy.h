@@ -4,7 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "SiraCharacter.h"
+
 #include "NormalEnemy.generated.h"
+
+class USiraAttributeComponent;
 
 UENUM()
 enum class EEnemyLifeState : uint8
@@ -25,15 +28,15 @@ class SIRA_API ANormalEnemy : public ASiraCharacter
 public:
 	// Sets default values for this character's properties
 	ANormalEnemy();
-
+	
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+	
 private:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-	
 	// Mark pending die and play montage
 	virtual void OnDead(FGameplayTag Tag, int32 Count);
 	
@@ -42,6 +45,9 @@ public:
 	
 	UPROPERTY(visibleAnywhere, BlueprintReadOnly)
 	EEnemyLifeState LifeState = EEnemyLifeState::Alive;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<USiraAttributeComponent> SiraAttributeComponent;
 
 	// Called to bind functionality to input
 	// virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;

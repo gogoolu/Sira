@@ -17,38 +17,44 @@ public:
 	
 	ASiraPlayer();
 	virtual void BeginPlay() override;
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaTime) override;
 	
-	virtual void Attack() override;
 	
+	// Called to bind functionality to input
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	
+	// ================== INPUT ====================
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputMappingContext> DefaultMapping;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> MoveAction;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> JumpAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> LookAction;
+
+	
+	// ================ Move Sliding =============
+	virtual void Attack() override;
 	void SetSlidingMode(bool InSlidingMode);
 	bool GetSlidingMode() const;
+	
+	// ================ GAS Attributes Change Event ==========
+	
+	
 private:
 	
 	// ================ Movement ==================
 	// Action Response
 	void Move(const FInputActionValue &Value);
 	void Look(const FInputActionValue &Value);
-	// void Jump();
 	
 	UPROPERTY(EditDefaultsOnly, Category="Anim")
 	bool bIsSlidingMode;
 	int64 LastSlideTime;
-	
-	// ================== INPUT ====================
-	UPROPERTY(EditDefaultsOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputMappingContext> DefaultMapping;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> MoveAction;
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> JumpAction;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> LookAction;
 	
 	
 	// =================== Camera ====================

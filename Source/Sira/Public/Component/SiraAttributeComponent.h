@@ -15,19 +15,25 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Attribute")
 	bool bFullScreenUI = false;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "Attribute")
+	UPROPERTY(EditDefaultsOnly, Category = "Attribute", meta = (EditCondition = "bFullScreenUI", EditConditionHides))
 	TSubclassOf<UUserWidget> AttributeUIClass;
+	
+	UFUNCTION(BlueprintPure, Category = "Attribute")
+	float GetAttributeValue(const FGameplayAttribute& Attribute) const;
+	
+	UFUNCTION(BlueprintPure, Category = "Attribute")
+	float K2_GetAttributeValue(FGameplayAttribute Attribute) const;
+	
+	UFUNCTION()
+	virtual void Init();
 	
 private:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
-	UFUNCTION()
-	virtual void Init();
 	
 	void HandleOwnerAttributeChanged(const FOnAttributeChangeData& Data) const;
 	
-	TWeakObjectPtr<UUserWidget> AttributeWidget;
+	TWeakObjectPtr<UObject> AttributeListener;
 	TArray<FGameplayAttribute> ListenAttributes;
 	TMap<FGameplayAttribute, FDelegateHandle> AttributeDelegateMap;
 };
