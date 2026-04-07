@@ -38,7 +38,7 @@ private:
 
 public:	
 	// Mark pending die and play montage
-	virtual void OnDead(FGameplayTag Tag, int32 Count);
+	virtual void OnDead(FGameplayTag Tag, int32 Count) override;
 	
 	// bind Death AnimNotify, real destroy
 	virtual void Die();

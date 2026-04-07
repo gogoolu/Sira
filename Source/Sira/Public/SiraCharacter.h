@@ -29,6 +29,9 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	
+	// Mark Character Pending die
+	virtual void OnDead(FGameplayTag Tag, int32 Count);
 
 public:
 	// Called every frame

@@ -3,6 +3,9 @@
 
 #include "SiraCharacter.h"
 
+#include "AttributeSet/BaseAttributeSet.h"
+#include "Manager/SiraGameplayTags.h"
+
 // Sets default values
 ASiraCharacter::ASiraCharacter()
 {
@@ -24,7 +27,13 @@ void ASiraCharacter::BeginPlay()
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		auto HPAttr = UBaseAttributeSet::GetHPAttribute();
+		AbilitySystemComponent->RegisterGameplayTagEvent(FSiraGameplayTags::GetTag_LifeState_Dead()).AddUObject(this, &ThisClass::OnDead);
 	}
+}
+
+void ASiraCharacter::OnDead(FGameplayTag Tag, int32 Count)
+{
 }
 
 // Called every frame

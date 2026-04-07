@@ -55,7 +55,7 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category="Movement")
 	bool bShouldRelax;
 	
-	UPROPERTY(BlueprintReadOnly, Category="Movement")
+	UPROPERTY(BlueprintReadOnly, Category="State")
 	bool bIsAttacking;
 	
 private:

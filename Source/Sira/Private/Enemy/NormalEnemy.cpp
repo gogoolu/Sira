@@ -27,11 +27,7 @@ ANormalEnemy::ANormalEnemy()
 void ANormalEnemy::BeginPlay()
 {
 	Super::BeginPlay();
-	if (auto ASC = GetAbilitySystemComponent())
-	{
-		auto HPAttr = UBaseAttributeSet::GetHPAttribute();
-		ASC->RegisterGameplayTagEvent(FSiraGameplayTags::GetTag_LifeState_Dead()).AddUObject(this, &ANormalEnemy::OnDead);
-	}
+	
 	SiraAttributeComponent->Init();
 }
 

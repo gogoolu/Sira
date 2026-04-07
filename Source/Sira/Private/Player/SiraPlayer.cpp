@@ -5,8 +5,10 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "SiraPlayerController.h"
 #include "AttributeSet/BaseAttributeSet.h"
 #include "Camera/CameraComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 
@@ -144,6 +146,50 @@ void ASiraPlayer::Look(const FInputActionValue &Value)
 		const FVector2D LookVector = Value.Get<FVector2D>();
 		AddControllerYawInput(LookVector.X);
 		AddControllerPitchInput(LookVector.Y);
+	}
+}
+
+void ASiraPlayer::OnDead(FGameplayTag Tag, int32 Count)
+{
+	if (Count > 0)
+	{
+		DisableInput(Cast<ASiraPlayerController>(GetController()));
+		CameraBoom->TargetArmLength += 200;
+		if (auto MoveComp = GetCharacterMovement())
+		{
+			MoveComp->DisableMovement();
+		}
+		// StartRagDoll();
+		int32 MontageIndex = FMath::RandRange(0, DeathMontages.Num() - 1);
+		PlayAnimMontage(DeathMontages[MontageIndex]);
+		
+		if (auto PC = Cast<ASiraPlayerController>(GetController()))
+		{
+			PC->SetInputMode(FInputModeUIOnly());
+			PC->SetShowMouseCursor(true);
+		}
+		
+		
+		OnPlayerDead.Broadcast();
+	}
+}
+
+void ASiraPlayer::StartRagDoll() const
+{
+	auto MeshComponent = GetMesh();
+	if (!MeshComponent) return;
+	
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	MeshComponent->SetCollisionProfileName(TEXT("Ragdoll"));
+	MeshComponent->SetSimulatePhysics(true);
+	MeshComponent->WakeAllRigidBodies();
+	// MeshComponent->HideBoneByName(TEXT("weapon"), PBO_Term);
+	
+	if (auto MoveComp = GetCharacterMovement())
+	{
+		MoveComp->StopMovementImmediately();
+		MoveComp->DisableMovement();
+		MoveComp->SetComponentTickEnabled(false);
 	}
 }
 

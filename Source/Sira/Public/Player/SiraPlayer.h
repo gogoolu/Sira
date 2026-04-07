@@ -13,6 +13,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAttributeChanged,
 	float, OldValue
 );
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerDead);
+
 UCLASS()
 class SIRA_API ASiraPlayer : public ASiraCharacter
 {
@@ -27,6 +29,9 @@ public:
 	
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	
+	UPROPERTY(EditDefaultsOnly)
+	TArray<TObjectPtr<UAnimMontage>> DeathMontages;
 	
 	// ================== INPUT ====================
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
@@ -57,6 +62,8 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Attribute")
 	FOnAttributeChanged OnMaxHPChanged;
 	
+	UPROPERTY(BlueprintAssignable, Category="Attribute")
+	FOnPlayerDead OnPlayerDead;
 private:
 	
 	// ================ Movement ==================
@@ -76,4 +83,9 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera, meta=(AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> PlayerCamera;
 	
+	
+	virtual void OnDead(FGameplayTag Tag, int32 Count) override;
+
+	
+	void StartRagDoll() const;
 };
