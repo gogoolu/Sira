@@ -5,6 +5,7 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "AttributeSet/BaseAttributeSet.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -47,6 +48,48 @@ void ASiraPlayer::BeginPlay()
 				Subsystem->AddMappingContext(DefaultMapping, 0);
 			}
 		}
+	}
+	
+	BindAttributeEvent();
+}
+
+void ASiraPlayer::BindAttributeEvent()
+{
+	if (IsValid(AbilitySystemComponent))
+	{
+		FOnAttributeChangeData AttributeChangeData {};
+		// HP
+		auto HPAttr = UBaseAttributeSet::GetHPAttribute();
+		float HP = AbilitySystemComponent->GetNumericAttribute(HPAttr);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(HPAttr)
+		.AddUObject(this, &ThisClass::HandleAttributeChanged);
+		// manually trigger once
+		AttributeChangeData.Attribute = HPAttr;
+		AttributeChangeData.NewValue = HP;
+		AttributeChangeData.OldValue = HP;
+		HandleAttributeChanged(AttributeChangeData);
+		
+		// Max HP
+		auto MaxHPAttr = UBaseAttributeSet::GetMaxHPAttribute();
+		float MaxHP = AbilitySystemComponent->GetNumericAttribute(MaxHPAttr);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(MaxHPAttr)
+		.AddUObject(this, &ThisClass::HandleAttributeChanged);
+		// manually trigger once
+		AttributeChangeData.Attribute = MaxHPAttr;
+		AttributeChangeData.NewValue = MaxHP;
+		AttributeChangeData.OldValue = MaxHP;
+		HandleAttributeChanged(AttributeChangeData);
+	}
+}
+
+void ASiraPlayer::HandleAttributeChanged(const FOnAttributeChangeData& Data) const
+{
+	if (Data.Attribute == UBaseAttributeSet::GetHPAttribute())
+	{
+		OnHPChanged.Broadcast(Data.Attribute, Data.NewValue, Data.OldValue);
+	} else if (Data.Attribute == UBaseAttributeSet::GetMaxHPAttribute())
+	{
+		OnMaxHPChanged.Broadcast(Data.Attribute, Data.NewValue, Data.OldValue);
 	}
 }
 

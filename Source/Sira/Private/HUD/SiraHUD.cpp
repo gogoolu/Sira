@@ -7,10 +7,12 @@ void ASiraHUD::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	USiraAttributeUserWidget* HUDWidget = CreateWidget<USiraAttributeUserWidget>(GetWorld(), MainHUDClass);
-	if (auto Player = Cast<ASiraPlayer>(GetOwningPawn()))
+	if (USiraAttributeUserWidget* HUDWidget = CreateWidget<USiraAttributeUserWidget>(GetWorld(), MainHUDClass))
 	{
-		HUDWidget->Init(Player->GetAbilitySystemComponent());
+		if (auto Player = Cast<ASiraPlayer>(GetOwningPawn()))
+		{
+			HUDWidget->Init(Player->GetAbilitySystemComponent());
+		}
+		HUDWidget->AddToViewport();	
 	}
-	HUDWidget->AddToViewport();
 }

@@ -21,4 +21,7 @@ public:
 	// this stupid function just use for handle reference parameter in blueprint function
 	UFUNCTION(BlueprintPure, Category="Attribute")
 	static FGameplayAttribute MakeGameplayAttribute(FGameplayAttribute Attribute);
+	
+	UFUNCTION(BlueprintPure, Category="Attribute")
+	static float GetSiraPlayerAttribute(const ASiraPlayer* TargetPlayer, FGameplayAttribute Attribute);
 };

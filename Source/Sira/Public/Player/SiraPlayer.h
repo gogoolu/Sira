@@ -7,6 +7,11 @@
 #include "SiraPlayer.generated.h"
 struct FInputActionValue;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAttributeChanged, 
+	const FGameplayAttribute&, Attribute, 
+	float, NewValue,
+	float, OldValue
+);
 
 UCLASS()
 class SIRA_API ASiraPlayer : public ASiraCharacter
@@ -43,7 +48,14 @@ public:
 	bool GetSlidingMode() const;
 	
 	// ================ GAS Attributes Change Event ==========
+	void BindAttributeEvent();
+	void HandleAttributeChanged(const FOnAttributeChangeData& Data) const;
 	
+	UPROPERTY(BlueprintAssignable, Category = "Attribute")
+	FOnAttributeChanged OnHPChanged;
+	
+	UPROPERTY(BlueprintAssignable, Category = "Attribute")
+	FOnAttributeChanged OnMaxHPChanged;
 	
 private:
 	
