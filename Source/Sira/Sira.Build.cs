@@ -27,7 +27,8 @@ public class Sira : ModuleRules
 			"AIModule", 
 			"GameplayTags", 
 			"GameplayTags",
-			"NavigationSystem", 
+			"NavigationSystem",
+			"ProceduralMeshComponent",
 		});
 
 		// Uncomment if you are using Slate UI
