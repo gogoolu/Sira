@@ -1,6 +1,9 @@
-﻿#include "Manager/TerrainGenerator.h"
+#include "Manager/TerrainGenerator.h"
+
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "ProceduralMeshComponent/Public/ProceduralMeshComponent.h"
 #include "ProceduralMeshComponent/Public/KismetProceduralMeshLibrary.h"
+#include "PoissonPoints.h"
 
 
 ATerrainGenerator::ATerrainGenerator()
@@ -8,55 +11,200 @@ ATerrainGenerator::ATerrainGenerator()
 	ProceduralMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ProceduralMesh"));
 }
 
-float ATerrainGenerator::Noise(int32 X, int32 Y, float InFrequency) const
+// [-1, 1] to [0, 1]
+float ATerrainGenerator::Noise(int32 X, int32 Y, float InFrequency, const FVector2D& Offset)
 {
-	return FMath::PerlinNoise2D(SeedOffset + FVector2D{X * InFrequency, Y * Frequency});
+	return FMath::PerlinNoise2D({X * InFrequency + Offset.X,Y * InFrequency + Offset.Y}) / 2.0f + 0.5f;
+}
+
+// float ATerrainGenerator::RidgeNoise(int32 X, int32 Y, float InFrequency, int32 InSeed) const
+// {
+// 	// [-1, 1] to [0, 1]
+// 	FRandomStream Random {InSeed};
+// 	float NoiseValue = FMath::PerlinNoise2D(
+// 		FVector2D{X * InFrequency + Random.RandRange(0, 200000)
+// 		,Y * InFrequency + Random.RandRange(0, 200000)}
+// 	) / 2.0f + 0.5f;
+// 	
+// 	return 1.0f - FMath::Abs(NoiseValue * 2.0f - 1.0f);
+// }
+
+void ATerrainGenerator::CalculateBaseVertices(TArray<BaseTerrainType>& BaseTerrainVertices) const
+{
+	BaseTerrainVertices.SetNumUninitialized(SizeX * SizeY);
+	FRandomStream Random {BaseSeed};
+	FVector2D Offset(Random.FRandRange(0, 20000), Random.FRandRange(0, 20000));
+	for (int32 x = 0; x < SizeX; x++)
+	{
+		for (int32 y = 0; y < SizeY; y++)
+		{
+			float Height = Noise(x, y, BaseFreq, Offset);
+			if (Height < BasePlainHeight)
+			{
+				BaseTerrainVertices[x * SizeY + y] = BaseTerrainType::Plain;
+			} else
+			{
+				BaseTerrainVertices[x * SizeY + y] = BaseTerrainType::Mountain;
+			}
+		}
+	}
 }
 
 void ATerrainGenerator::GenerateTerrain()
 {
+	TArray<BaseTerrainType> BaseTerrainVertices;
 	TArray<FVector> Vertices;
 	TArray<int32> Triangles;
 	TArray<FVector> Normals;
 	TArray<FVector2D> UV;
 	TArray<FProcMeshTangent> Tangents;
+	TArray<FLinearColor> VertexColors;
 	
-	for (int32 x = 0; x < SizeX; x++)
+	CalculateBaseVertices(BaseTerrainVertices);
+	if (bShowBaseTerrain)
+	{
+		Vertices.Reserve(BaseTerrainVertices.Num());
+		for (int32 x = 0; x < SizeX; x++)
+		{
+			for (int32 y = 0; y < SizeY; y++)
+			{
+				float Height = BaseTerrainVertices[x * SizeY + y] == BaseTerrainType::Plain ? 0 : 100;
+				Vertices.Add({x * ScaleX, y * ScaleY, Height});
+			}
+		}
+	} else
+	{
+		CalculateVertices(BaseTerrainVertices, Vertices, UV);
+	}
+	
+	CalculateTriangles(Triangles);
+	
+	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(
+		Vertices,
+		Triangles,
+		UV,
+		Normals,
+		Tangents
+	);
+	
+	CalculateLinearColors(Normals, VertexColors);
+	ProceduralMesh->CreateMeshSection_LinearColor(
+		0,
+		Vertices,
+		Triangles,
+		Normals,
+		UV,
+		VertexColors,
+		Tangents,
+		true
+	);
+	GenerateFoliage();
+}
+
+void ATerrainGenerator::CalculateVertices(const TArray<BaseTerrainType>& BaseTerrainVertices, TArray<FVector>& Vertices, TArray<FVector2D>& UV) const
+{
+	Vertices.Empty();
+	Vertices.SetNumUninitialized(SizeX * SizeY);
+	UV.Empty();
+	UV.SetNumUninitialized(SizeX * SizeY);
+	TArray<FVector2D> LayerOffsets;
+	LayerOffsets.Reserve(Layer);
+	for (int i = 0; i < Layer; i++)
+	{
+		LayerOffsets.Add({RandomStream.FRandRange(0, 20000), RandomStream.FRandRange(0, 20000)});
+	}
+	
+	ParallelFor(SizeX, [&](int32 x)
 	{
 		for (int32 y = 0; y < SizeY; y++)
 		{
+			// Calculate UV
+			float U = StaticCast<float>(x) / StaticCast<float>(SizeX - 1);
+			float V = StaticCast<float>(y) / StaticCast<float>(SizeY - 1);
+			UV[x * SizeY + y] = {U, V};
+
+			
 			float Height = 0;
 			float LocalAmplitude = Amplitude;
 			float LocalFrequency = Frequency;
+			float AmplitudeAccumulation = 0;
+			
+			// 叠加
 			for (int i = 0; i < Layer; i++)
 			{
-				Height += Noise(x, y, Frequency) * LocalAmplitude;
+				Height += Noise(x, y, LocalFrequency, LayerOffsets[i]) * LocalAmplitude;
+				AmplitudeAccumulation += LocalAmplitude;
 				LocalAmplitude *= Persistence;
 				LocalFrequency *= Lacunarity;
 			}
-			if (Height < PlainHeight)
+			// 确保 Height 仍在 [0, 1] 内
+			Height /= AmplitudeAccumulation;
+			Height *= ExpFudgeFactor;
+			Height = FMath::Pow(Height, Exp);
+			
+			
+			// 地形因素
+			if (bUseBaseTerrain)
 			{
-				Height *= PlainFactor;
-			} else if (Height < HillHeight)
-			{
-				Height *= HillFactor;
+				if (Height < PlainHeight)
+				{
+					if (BaseTerrainVertices[x * SizeY + y] == BaseTerrainType::Plain)
+					{
+						Height *= PlainFactor;
+					} else
+					{
+						Height *= HillFactor;
+					}
+				} else if (Height < HillHeight)
+				{
+					Height *= HillFactor;
+				} else
+				{
+					if (BaseTerrainVertices[x * SizeY + y] == BaseTerrainType::Mountain)
+					{
+						Height *= MountainFactor;
+					} else
+					{
+						Height *= HillFactor;
+					}
+				}
 			} else
 			{
-				Height *= MountainFactor;
+				if (Height < PlainHeight)
+				{
+					Height *= PlainFactor;
+				} else if (Height < HillHeight)
+				{
+					Height *= HillFactor;
+				} else
+				{
+					Height *= MountainFactor;
+				}
 			}
-				
-			Vertices.Add({x * ScaleX, y * ScaleY, Height});
+			Vertices[x * SizeY + y] = {x * ScaleX, y * ScaleY, Height};
 		}
-	}
-	TArray<FLinearColor> VertexColors;
-	VertexColors.Reserve(Vertices.Num());
-	
-	for (int32 i = 0; i < Vertices.Num(); i++)
+	});
+}
+
+void ATerrainGenerator::CalculateLinearColors(const TArray<FVector>& Normals, TArray<FLinearColor>& VertexColors) const
+{
+	VertexColors.Empty();
+	VertexColors.Reserve(Normals.Num());
+	for (auto& Normal : Normals)
 	{
-		VertexColors.Add(VertexLinearColor);
+		VertexColors.Add({
+			StaticCast<float>(Normal.X),
+			StaticCast<float>(Normal.Y),
+			StaticCast<float>(Normal.Z)
+		});
 	}
-	
-	for (int32 x = 0; x < SizeX - 1; x++)
+}
+
+void ATerrainGenerator::CalculateTriangles(TArray<int32>& Triangles) const
+{
+	Triangles.Empty();
+	Triangles.Reserve(SizeX * SizeY);
+	for (int32 x = 0; x < SizeX; x++)
 	{
 		for (int32 y = 0; y < SizeY - 1; y++)
 		{
@@ -71,32 +219,132 @@ void ATerrainGenerator::GenerateTerrain()
 			Triangles.Add(i + SizeY);
 		}
 	}
+}
+
+void ATerrainGenerator::SpawnGrass(const FVector& Pos)
+{
+	UStaticMesh* GrassMesh = GetRandomMesh(GrassMeshes, GrassTotalWeight);
+	if (auto HISM = GrassHISMMap.Find(GrassMesh))
+	{
+		if (HISM->IsValid())
+		{
+			(*HISM)->AddInstance(FTransform {FRotator{0.f, FMath::FRandRange(0, 360.f), 0.f}, Pos});
+		}
+	}
+}
+
+void ATerrainGenerator::SpawnTree(const FVector& Pos)
+{
+	UStaticMesh* TreeMesh = GetRandomMesh(TreeMeshes, TreeTotalWeight);
+	if (auto HISM = TreeHISMMap.Find(TreeMesh))
+	{
+		if (HISM->IsValid())
+		{
+			(*HISM)->AddInstance(FTransform {FRotator{0.f, FMath::FRandRange(0, 360.f), 0.f}, Pos});
+		}
+	}
+}
+
+void ATerrainGenerator::GenerateFoliage()
+{
+	if (bEnableGrass)
+	{
+		TArray<FVector2D> GrassPoints = UPoissonPoints::GeneratePoissonPoints(SizeX * ScaleX, SizeY * ScaleY, GrassRadius, 15);
+		for (auto& Point : GrassPoints)
+		{
+			FHitResult HitResult;
+			if (GetWorld()->LineTraceSingleByChannel(HitResult, {Point.X, Point.Y, 10000},{Point.X, Point.Y, -10000}, ECC_Visibility))
+			{
+				FVector HitNormal = HitResult.ImpactNormal;
+				float Slope = FMath::RadiansToDegrees(FMath::Acos(FMath::Abs(HitNormal.Z)));
+				if (Slope < GrassMaxSlope)
+				{
+					SpawnGrass(HitResult.ImpactPoint);
+				}
+			}
+		}
+	}
 	
-	UKismetProceduralMeshLibrary::CalculateTangentsForMesh(
-		Vertices,
-		Triangles,
-		UV,
-		Normals,
-		Tangents
-	);
-	
-	ProceduralMesh->CreateMeshSection_LinearColor(
-		0,
-		Vertices,
-		Triangles,
-		Normals,
-		UV,
-		VertexColors,
-		Tangents,
-		true
-	);
+	if (bEnableTree)
+	{
+		TArray<FVector2D> TreePoints = UPoissonPoints::GeneratePoissonPoints(SizeX * ScaleX, SizeY * ScaleY, TreeRadius, 15);
+		TArray<FVector> TreePendingPoints;
+		for (auto& Point : TreePoints)
+		{
+			FHitResult HitResult;
+			if (GetWorld()->LineTraceSingleByChannel(HitResult, {Point.X, Point.Y, 10000},{Point.X, Point.Y, -10000}, ECC_Visibility))
+			{
+				FVector HitNormal = HitResult.ImpactNormal;
+				float Slope = FMath::RadiansToDegrees(FMath::Acos(FMath::Abs(HitNormal.Z)));
+				if (Slope < TreeMaxSlope)
+				{
+					TreePendingPoints.Add(HitResult.ImpactPoint);
+				}
+			}
+		}
+		for (auto& Point : TreePendingPoints)
+		{
+			SpawnTree(Point);
+		}
+	}
+}
+
+UStaticMesh* ATerrainGenerator::GetRandomMesh(const TArray<FTerrainMeshInfo>& MeshInfos, int32 TotalWeight) const
+{
+	int RandValue = RandomStream.FRandRange(0, TotalWeight);
+	int32 Sum = 0;
+	for (auto& [Mesh, Weight] : MeshInfos)
+	{
+		Sum += Weight;
+		if (Sum >= RandValue)
+		{
+			return Mesh;
+		}
+	}
+	return nullptr;
 }
 
 void ATerrainGenerator::BeginPlay()
 {
 	Super::BeginPlay();
+	RandomStream = FRandomStream(Seed);
+	
+	// GrassHISM
+	for (auto& GrassMesh : GrassMeshes)
+	{
+		if (GrassMesh.StaticMesh)
+		{
+			if (auto GrassMeshComp = NewObject<UHierarchicalInstancedStaticMeshComponent>(this, UHierarchicalInstancedStaticMeshComponent::StaticClass()))
+			{
+				GrassMeshComp->RegisterComponent();
+				GrassMeshComp->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+				GrassMeshComp->SetStaticMesh(GrassMesh.StaticMesh);
+				GrassMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+				GrassHISMMap.Add(GrassMesh.StaticMesh, GrassMeshComp);
+				GrassTotalWeight += GrassMesh.Weight;
+				GrassMeshComp->SetCullDistances(GrassStartCullDistance, GrassEndCullDistance);
+			}
+		}
+	}
+	
+	// Tree HISM
+	for (auto TreeMesh : TreeMeshes)
+	{
+		if (TreeMesh.StaticMesh)
+		{
+			if (auto TreeMeshComp = NewObject<UHierarchicalInstancedStaticMeshComponent>(this, UHierarchicalInstancedStaticMeshComponent::StaticClass()))
+			{
+				TreeMeshComp->RegisterComponent();
+				TreeMeshComp->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+				TreeMeshComp->SetStaticMesh(TreeMesh.StaticMesh);
+				// TreeMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+				TreeHISMMap.Add(TreeMesh.StaticMesh, TreeMeshComp);
+				TreeTotalWeight += TreeMesh.Weight;
+				TreeMeshComp->SetCullDistances(TreeStartCullDistance, TreeEndCullDistance);
+			}
+		}
+	}
+	
 	GenerateTerrain();
 	ProceduralMesh->SetMaterial(0, TerrainMaterial);
-	RandomStream = FRandomStream(Seed);
-	SeedOffset = {StaticCast<float>(RandomStream.RandRange(0, 10000)),StaticCast<float>( RandomStream.RandRange(0, 10000))};
 }
