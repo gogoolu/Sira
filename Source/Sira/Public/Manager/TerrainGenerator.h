@@ -39,6 +39,9 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UMaterialInterface> TerrainMaterial;
 	
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UMaterialInterface> BorderMaterial;
+	
 	UPROPERTY()
 	TMap<UStaticMesh*, TWeakObjectPtr<UHierarchicalInstancedStaticMeshComponent>> GrassHISMMap; 
 	
@@ -165,6 +168,7 @@ private:
 	void CalculateLinearColors(const TArray<FVector>& Normals, TArray<FLinearColor>& Colors) const;
 	
 	void GenerateFoliage();
+	void GenerateBorder();
 	void SpawnGrass(const FVector& Pos);
 	void SpawnTree(const FVector& Pos);
 	

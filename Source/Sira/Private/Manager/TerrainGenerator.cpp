@@ -346,5 +346,49 @@ void ATerrainGenerator::BeginPlay()
 	}
 	
 	GenerateTerrain();
+	GenerateBorder();
+	// 地形mesh
 	ProceduralMesh->SetMaterial(0, TerrainMaterial);
+	// 边界空气墙
+	ProceduralMesh->SetMaterial(1, BorderMaterial);
+}
+
+void ATerrainGenerator::GenerateBorder()
+{
+	TArray<FVector> Vertices {
+		{0, 0, 0},
+		{(SizeX - 1) * ScaleX, 0, 0},
+		{(SizeX - 1) * ScaleX, (SizeY - 1) * ScaleY, 0},
+		{0, (SizeY - 1) * ScaleY, 0},
+		
+		{0, 0, 10000},
+		{(SizeX - 1) * ScaleX, 0, 10000},
+		{(SizeX - 1) * ScaleX, (SizeY - 1) * ScaleY, 10000},
+		{0, (SizeY - 1) * ScaleY, 10000},
+	};
+	
+	TArray<int32> Triangles {
+		0, 1, 5,
+		5, 4, 0,
+		
+		1, 2, 6,
+		6, 5, 1,
+		
+		2, 3, 7,
+		7, 6, 2,
+		
+		3, 0, 4,
+		4, 7, 3
+	};
+	
+	ProceduralMesh->CreateMeshSection_LinearColor(
+		1,
+		Vertices,
+		Triangles,
+		{},
+		{},
+		{},
+		{},
+		true
+	);
 }
