@@ -33,6 +33,7 @@ public:
 	
 	ATerrainGenerator();
 	void GenerateTerrain();
+	void GenerateTerrainWithSeed(int32 InBaseSeed, int32 InSeed);
 	
 	virtual void BeginPlay() override;
 	
@@ -56,7 +57,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category="Base")
 	bool bUseBaseTerrain = true;
 	
-	UPROPERTY(EditDefaultsOnly, Category="Base")
+	UPROPERTY(BlueprintReadWrite, Category="Base")
 	int32 BaseSeed = 0;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Base")
@@ -66,9 +67,8 @@ public:
 	float BasePlainHeight = 0.5f;
 	
 	
-	// Detail
-	
-	UPROPERTY(EditDefaultsOnly, Category="Detail")
+	// Detail ===================
+	UPROPERTY(BlueprintReadWrite, Category="Detail")
 	int32 Seed = 0;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Detail")
@@ -152,6 +152,9 @@ public:
 	static float Noise(int32 X, int32 Y, float Frequency, const FVector2D& Offset);
 	// float RidgeNoise(int32 X, int32 Y, float Frequency, int32 InSeed = 0) const;
 	
+	void SetSeed(int32 Seed);
+	void SetBaseSeed(int32 Seed);
+	
 private:
 	int32 GrassTotalWeight = 0;
 	int32 TreeTotalWeight = 0;
@@ -168,6 +171,8 @@ private:
 	void CalculateLinearColors(const TArray<FVector>& Normals, TArray<FLinearColor>& Colors) const;
 	
 	void GenerateFoliage();
+	UFUNCTION(BlueprintCallable)
+	void ClearFoliage();
 	void GenerateBorder();
 	void SpawnGrass(const FVector& Pos);
 	void SpawnTree(const FVector& Pos);

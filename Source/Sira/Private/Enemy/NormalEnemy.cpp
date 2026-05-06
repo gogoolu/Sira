@@ -32,11 +32,11 @@ void ANormalEnemy::BeginPlay()
 }
 
 // Called every frame
-void ANormalEnemy::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
+// void ANormalEnemy::Tick(float DeltaTime)
+// {
+// 	Super::Tick(DeltaTime);
+//
+// }
 
 void ANormalEnemy::OnDead(FGameplayTag Tag, int32 Count)
 {

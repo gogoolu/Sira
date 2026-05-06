@@ -8,6 +8,7 @@
 #include "SiraPlayerController.h"
 #include "AttributeSet/BaseAttributeSet.h"
 #include "Camera/CameraComponent.h"
+#include "Component/InventoryComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -36,6 +37,8 @@ ASiraPlayer::ASiraPlayer()
 	{
 		MovementComp->RotationRate.Yaw = 640.0f;
 	}
+	
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>("Inventory");
 }
 
 void ASiraPlayer::BeginPlay()
@@ -115,6 +118,22 @@ void ASiraPlayer::Tick(float DeltaTime)
 	{
 		SetSlidingMode(false);
 	}
+}
+
+FVector ASiraPlayer::GetPlayerShootStartPoint() const
+{
+	if (PlayerCamera)
+	{
+		float DotProduction = PlayerCamera->GetForwardVector().Dot(GetActorForwardVector().GetSafeNormal());
+		if (FMath::IsNearlyZero(DotProduction))
+		{
+			// camera direction is parallel with plane
+			return PlayerCamera->GetComponentLocation();
+		}
+		// not parallel, calculate intersection
+		return FMath::LinePlaneIntersection(PlayerCamera->GetComponentLocation(), PlayerCamera->GetComponentLocation() + PlayerCamera->GetForwardVector(), GetActorLocation(), GetActorForwardVector().GetSafeNormal());
+	}
+	return GetActorLocation();
 }
 
 void ASiraPlayer::Attack()

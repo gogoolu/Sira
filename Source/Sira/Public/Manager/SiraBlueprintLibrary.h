@@ -1,9 +1,38 @@
 ﻿#pragma once
 
+#include <concepts>
+#include "EngineUtils.h"
 #include "Player/SiraPlayer.h"
 #include "SiraPlayerController.h"
+
+
 #include "SiraBlueprintLibrary.generated.h"
 
+
+class USiraUIGameInstance;
+
+namespace SiraUtilities
+{
+	template <typename F, typename ActorType>
+	concept CallForAllActorsFuncType = requires (F Func, ActorType* Actor)
+	{
+		{ Func(Actor) } ->std::same_as<void>;
+	};
+	
+	template<typename ActorType>
+	requires requires () {std::derived_from<ActorType, AActor>;}
+	void CallForAllActors(const UObject* WorldContextObject, CallForAllActorsFuncType<ActorType> auto CallForAllActorsFunc)
+	{
+		if (UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull))
+		{
+			for (TActorIterator<ActorType> It(World); It; ++It)
+			{
+				CallForAllActorsFunc(*It);
+			}
+		}
+	}
+	
+}
 
 UCLASS(meta=(ScriptName="SiraBlueprintLibrary"))
 class USiraBlueprintLibrary : public UBlueprintFunctionLibrary
@@ -24,4 +53,23 @@ public:
 	
 	UFUNCTION(BlueprintPure, Category="Attribute")
 	static float GetSiraPlayerAttribute(const ASiraPlayer* TargetPlayer, FGameplayAttribute Attribute);
+	
+	UFUNCTION(BlueprintPure, Category="Game", meta=(WorldContext="WorldContextObject", UnsafeDuringActorConstruction="true"))
+	static int32 GetActorsCount(const UObject* WorldContextObject, TSubclassOf<AActor> Class);
+	
+	template<typename ActorType>
+	requires std::derived_from<ActorType, AActor>
+	[[nodiscard]]
+	static int32 GetActorsCount(const UObject* WorldContextObject)
+	{
+		int32 Result = 0;
+		if (UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull))
+		{
+			for (TActorIterator<ActorType> It(World); It; ++It)
+			{
+				Result++;
+			}
+		}
+		return Result;
+	}
 };

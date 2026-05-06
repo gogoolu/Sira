@@ -4,17 +4,32 @@
 #include "ProceduralMeshComponent/Public/ProceduralMeshComponent.h"
 #include "ProceduralMeshComponent/Public/KismetProceduralMeshLibrary.h"
 #include "PoissonPoints.h"
+#include "SiraLog.h"
+#include "AI/NavigationSystemBase.h"
 
 
 ATerrainGenerator::ATerrainGenerator()
 {
 	ProceduralMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ProceduralMesh"));
+	ProceduralMesh->SetCollisionProfileName("Land");
+	SetRootComponent(ProceduralMesh);
 }
 
 // [-1, 1] to [0, 1]
 float ATerrainGenerator::Noise(int32 X, int32 Y, float InFrequency, const FVector2D& Offset)
 {
 	return FMath::PerlinNoise2D({X * InFrequency + Offset.X,Y * InFrequency + Offset.Y}) / 2.0f + 0.5f;
+}
+
+void ATerrainGenerator::SetSeed(int32 InSeed)
+{
+	RandomStream = FRandomStream(Seed);
+	Seed = InSeed;
+}
+
+void ATerrainGenerator::SetBaseSeed(int32 InSeed)
+{
+	BaseSeed = InSeed;
 }
 
 // float ATerrainGenerator::RidgeNoise(int32 X, int32 Y, float InFrequency, int32 InSeed) const
@@ -52,6 +67,8 @@ void ATerrainGenerator::CalculateBaseVertices(TArray<BaseTerrainType>& BaseTerra
 
 void ATerrainGenerator::GenerateTerrain()
 {
+	ProceduralMesh->ClearAllMeshSections();
+	ClearFoliage();
 	TArray<BaseTerrainType> BaseTerrainVertices;
 	TArray<FVector> Vertices;
 	TArray<int32> Triangles;
@@ -59,8 +76,10 @@ void ATerrainGenerator::GenerateTerrain()
 	TArray<FVector2D> UV;
 	TArray<FProcMeshTangent> Tangents;
 	TArray<FLinearColor> VertexColors;
-	
-	CalculateBaseVertices(BaseTerrainVertices);
+	if (bUseBaseTerrain || bShowBaseTerrain)
+	{
+		CalculateBaseVertices(BaseTerrainVertices);
+	}
 	if (bShowBaseTerrain)
 	{
 		Vertices.Reserve(BaseTerrainVertices.Num());
@@ -99,6 +118,16 @@ void ATerrainGenerator::GenerateTerrain()
 		true
 	);
 	GenerateFoliage();
+	GenerateBorder();
+	FNavigationSystem::UpdateComponentData(*ProceduralMesh);
+	UE_LOG(LogSira, Log, TEXT("[ATerrainGenerator::GenerateTerrain] Generate Terrain Finished, BaseSeed: %d, Seed: %d"), BaseSeed, Seed);
+}
+
+void ATerrainGenerator::GenerateTerrainWithSeed(int32 InBaseSeed, int32 InSeed)
+{
+	SetBaseSeed(InBaseSeed);
+	SetSeed(InSeed);
+	GenerateTerrain();
 }
 
 void ATerrainGenerator::CalculateVertices(const TArray<BaseTerrainType>& BaseTerrainVertices, TArray<FVector>& Vertices, TArray<FVector2D>& UV) const
@@ -253,7 +282,7 @@ void ATerrainGenerator::GenerateFoliage()
 		for (auto& Point : GrassPoints)
 		{
 			FHitResult HitResult;
-			if (GetWorld()->LineTraceSingleByChannel(HitResult, {Point.X, Point.Y, 10000},{Point.X, Point.Y, -10000}, ECC_Visibility))
+			if (GetWorld()->LineTraceSingleByChannel(HitResult, {Point.X, Point.Y, 10000},{Point.X, Point.Y, -10000}, ECC_GameTraceChannel1))
 			{
 				FVector HitNormal = HitResult.ImpactNormal;
 				float Slope = FMath::RadiansToDegrees(FMath::Acos(FMath::Abs(HitNormal.Z)));
@@ -268,24 +297,31 @@ void ATerrainGenerator::GenerateFoliage()
 	if (bEnableTree)
 	{
 		TArray<FVector2D> TreePoints = UPoissonPoints::GeneratePoissonPoints(SizeX * ScaleX, SizeY * ScaleY, TreeRadius, 15);
-		TArray<FVector> TreePendingPoints;
 		for (auto& Point : TreePoints)
 		{
 			FHitResult HitResult;
-			if (GetWorld()->LineTraceSingleByChannel(HitResult, {Point.X, Point.Y, 10000},{Point.X, Point.Y, -10000}, ECC_Visibility))
+			if (GetWorld()->LineTraceSingleByChannel(HitResult, {Point.X, Point.Y, 10000},{Point.X, Point.Y, -10000}, ECC_GameTraceChannel1))
 			{
 				FVector HitNormal = HitResult.ImpactNormal;
 				float Slope = FMath::RadiansToDegrees(FMath::Acos(FMath::Abs(HitNormal.Z)));
 				if (Slope < TreeMaxSlope)
 				{
-					TreePendingPoints.Add(HitResult.ImpactPoint);
+					SpawnTree(HitResult.ImpactPoint);
 				}
 			}
 		}
-		for (auto& Point : TreePendingPoints)
-		{
-			SpawnTree(Point);
-		}
+	}
+}
+
+void ATerrainGenerator::ClearFoliage()
+{
+	for (auto& [k, HISM] : GrassHISMMap)
+	{
+		HISM->ClearInstances();
+	}
+	for (auto& [k, HISM] : TreeHISMMap)
+	{
+		HISM->ClearInstances();
 	}
 }
 
@@ -345,8 +381,6 @@ void ATerrainGenerator::BeginPlay()
 		}
 	}
 	
-	GenerateTerrain();
-	GenerateBorder();
 	// 地形mesh
 	ProceduralMesh->SetMaterial(0, TerrainMaterial);
 	// 边界空气墙

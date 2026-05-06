@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "SiraCharacter.h"
 #include "SiraPlayer.generated.h"
+class UInventoryComponent;
 struct FInputActionValue;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAttributeChanged, 
@@ -25,6 +26,9 @@ public:
 	ASiraPlayer();
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	
+	UFUNCTION(BlueprintCallable)
+	FVector GetPlayerShootStartPoint() const;
 	
 	
 	// Called to bind functionality to input
@@ -75,6 +79,9 @@ private:
 	bool bIsSlidingMode;
 	int64 LastSlideTime;
 	
+	// 背包
+	UPROPERTY(visibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = true))
+	TObjectPtr<UInventoryComponent> InventoryComponent;
 	
 	// =================== Camera ====================
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera, meta=(AllowPrivateAccess = "true"))

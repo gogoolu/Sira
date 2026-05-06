@@ -1,4 +1,6 @@
 ﻿#include "SiraPlayerController.h"
+
+#include "Manager/SiraUIGameInstance.h"
 // #include "EnhancedInputSubsystems.h"
 
 ASiraPlayerController::ASiraPlayerController()
