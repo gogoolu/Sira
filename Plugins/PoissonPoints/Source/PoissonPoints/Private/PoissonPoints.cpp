@@ -12,7 +12,7 @@ void FPoissonPointsModule::StartupModule()
 void FPoissonPointsModule::ShutdownModule()
 {}
 
-TArray<FVector2D> UPoissonPoints::GeneratePoissonPoints(float Width, float Height, float Radius, int32 MaxAttempts)
+TArray<FVector2D> UPoissonPoints::GeneratePoissonPoints(float Width, float Height, float Radius, int32 Seed, int32 MaxAttempts)
 {
     TArray<FVector2D> ActivePoints;
     TArray<FVector2D> Points;
@@ -27,8 +27,14 @@ TArray<FVector2D> UPoissonPoints::GeneratePoissonPoints(float Width, float Heigh
     auto GetCellCoords = [CellSize](const FVector2D& Point) -> FIntPoint {
         return FIntPoint(FMath::FloorToInt(Point.X / CellSize), FMath::FloorToInt(Point.Y / CellSize));
     };
+    
+    FRandomStream RandomStream {Seed};
 
-    FVector2D InitialPoint(FMath::FRandRange(0.0f, Width), FMath::FRandRange(0.0f, Height));
+    // 指定参数求值顺序，确保种子相同时结果相同
+    float X = RandomStream.FRandRange(0.0f, Width);
+    float Y = RandomStream.FRandRange(0.0f, Height);
+    FVector2D InitialPoint{X, Y};
+    
     ActivePoints.Add(InitialPoint);
     Points.Add(InitialPoint);
     Grid[GetCellCoords(InitialPoint).Y * GridWidth + GetCellCoords(InitialPoint).X] = InitialPoint;
@@ -41,7 +47,7 @@ TArray<FVector2D> UPoissonPoints::GeneratePoissonPoints(float Width, float Heigh
 
         for (int32 i = 0; i < MaxAttempts; i++)
         {
-            FVector2D NewPoint = GenerateRandomPointAround(Point, Radius, Radius, 2 * Radius);
+            FVector2D NewPoint = GenerateRandomPointAround(Point, Radius, Radius, 2 * Radius, RandomStream);
             if (IsValidPoint(NewPoint, Radius, Grid, GridWidth, GridHeight, CellSize))
             {
                 ActivePoints.Add(NewPoint);
@@ -61,10 +67,10 @@ TArray<FVector2D> UPoissonPoints::GeneratePoissonPoints(float Width, float Heigh
     return Points;
 }
 
-FVector2D UPoissonPoints::GenerateRandomPointAround(const FVector2D& Point, float Radius, float MinDist, float MaxDist)
+FVector2D UPoissonPoints::GenerateRandomPointAround(const FVector2D& Point, float Radius, float MinDist, float MaxDist, const FRandomStream& RandomStream)
 {
-    float Angle = FMath::FRandRange(0.0f, 2 * PI);
-    float Dist = FMath::FRandRange(MinDist, MaxDist);
+    float Angle = RandomStream.FRandRange(0.0f, 2 * PI);
+    float Dist = RandomStream.FRandRange(MinDist, MaxDist);
     return FVector2D(Point.X + Dist * FMath::Cos(Angle), Point.Y + Dist * FMath::Sin(Angle));
 }
 

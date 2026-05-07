@@ -38,10 +38,10 @@ public:
 	* @endcode
 	*/
 	UFUNCTION(BlueprintCallable, Category = "PoissonPoints")
-	static TArray<FVector2D> GeneratePoissonPoints(float Width = 1000, float Height = 1000, float Radius = 50, int32 MaxAttempts = 15);
+	static TArray<FVector2D> GeneratePoissonPoints(float Width = 1000, float Height = 1000, float Radius = 50, int32 Seed = 0, int32 MaxAttempts = 15);
 
 private:
-	static FVector2D GenerateRandomPointAround(const FVector2D& Point, float Radius, float MinDist, float MaxDist);
+	static FVector2D GenerateRandomPointAround(const FVector2D& Point, float Radius, float MinDist, float MaxDist, const FRandomStream& RandomStream);
 	static bool IsValidPoint(const FVector2D& Point, float Radius, const TArray<FVector2D>& Grid, int32 GridWidth, int32 GridHeight, float CellSize);
 
 	

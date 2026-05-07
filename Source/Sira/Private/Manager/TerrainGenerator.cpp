@@ -278,7 +278,7 @@ void ATerrainGenerator::GenerateFoliage()
 {
 	if (bEnableGrass)
 	{
-		TArray<FVector2D> GrassPoints = UPoissonPoints::GeneratePoissonPoints(SizeX * ScaleX, SizeY * ScaleY, GrassRadius, 15);
+		TArray<FVector2D> GrassPoints = UPoissonPoints::GeneratePoissonPoints(SizeX * ScaleX, SizeY * ScaleY, GrassRadius, RandomStream.RandRange(0, 200000),15);
 		for (auto& Point : GrassPoints)
 		{
 			FHitResult HitResult;
@@ -296,7 +296,7 @@ void ATerrainGenerator::GenerateFoliage()
 	
 	if (bEnableTree)
 	{
-		TArray<FVector2D> TreePoints = UPoissonPoints::GeneratePoissonPoints(SizeX * ScaleX, SizeY * ScaleY, TreeRadius, 15);
+		TArray<FVector2D> TreePoints = UPoissonPoints::GeneratePoissonPoints(SizeX * ScaleX, SizeY * ScaleY, TreeRadius, RandomStream.RandRange(0, 200000),15);
 		for (auto& Point : TreePoints)
 		{
 			FHitResult HitResult;
