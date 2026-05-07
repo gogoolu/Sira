@@ -3,6 +3,8 @@
 
 #include "SiraGameMode.h"
 
+
+#include <random>
 #include "NavigationSystem.h"
 #include "SiraLog.h"
 #include "Blueprint/UserWidget.h"
@@ -80,7 +82,12 @@ void ASiraGameMode::StartNewGameLevel()
 	}
 	if (TerrainGenerator.IsValid())
 	{
-		TerrainGenerator->GenerateTerrainWithSeed(FMath::RandHelper(MAX_int32), FMath::RandHelper(MAX_int32));
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_int_distribution<int32> dis(0, MAX_int32);
+		int32 BaseSeed = dis(gen);
+		int32 Seed = dis(gen);
+		TerrainGenerator->GenerateTerrainWithSeed(BaseSeed, Seed);
 		
 		ResetPlayerToPlayerStart(USiraBlueprintLibrary::GetSiraPlayerController(GetWorld()));
 	}
