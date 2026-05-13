@@ -5,7 +5,11 @@
 #include "CoreMinimal.h"
 #include "SiraCharacter.h"
 #include "SiraPlayer.generated.h"
+
+
+class UNiagaraSystem;
 class UInventoryComponent;
+class UInputComponent;
 struct FInputActionValue;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAttributeChanged, 
@@ -32,15 +36,12 @@ public:
 	
 	
 	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	
 	UPROPERTY(EditDefaultsOnly)
 	TArray<TObjectPtr<UAnimMontage>> DeathMontages;
 	
 	// ================== INPUT ====================
-	UPROPERTY(EditDefaultsOnly, Category = "Input")
-	TObjectPtr<UInputMappingContext> DefaultMapping;
-
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> MoveAction;
 	
@@ -49,11 +50,16 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> LookAction;
-
 	
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> AttackAction; 
+
 	// ================ Move Sliding =============
-	virtual void Attack() override;
+	
+	UFUNCTION(BlueprintCallable, Category = "Movement")
 	void SetSlidingMode(bool InSlidingMode);
+
+	UFUNCTION(BlueprintCallable, Category = "Movement")
 	bool GetSlidingMode() const;
 	
 	// ================ GAS Attributes Change Event ==========
@@ -92,7 +98,8 @@ private:
 	
 	
 	virtual void OnDead(FGameplayTag Tag, int32 Count) override;
-
+	
+	void OnAbilityActivated(UGameplayAbility* Ability);
 	
 	void StartRagDoll() const;
 };

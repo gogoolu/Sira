@@ -3,27 +3,33 @@
 #include "SiraPlayerController.generated.h"
 
 
+class UInputMappingContext;
 class UInputAction;
 
 UCLASS()
 class ASiraPlayerController : public APlayerController 
 {
 	GENERATED_BODY()
+	
 public:
 	ASiraPlayerController();
+	
+	
 private:
-	// UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	// TObjectPtr<class UInputMappingContext> DefaultMappingContext;
- //    
-	// UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	// TObjectPtr<UInputAction> JumpAction;
-	//
-	// UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	// TObjectPtr<UInputAction> MoveAction;
- //    
-	// UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	// TObjectPtr<UInputAction> LookAction;
- //    
-	// virtual void SetupInputComponent() override;
 	virtual void BeginPlay() override;
+	virtual void SetupInputComponent() override;
+	
+	
+	void TogglePauseGame();
+	
+	// input ==================
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta=(AllowPrivateAccess = true))
+	TObjectPtr<UInputMappingContext> BasicGameMappingContext;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta=(AllowPrivateAccess = true))
+	TObjectPtr<UInputMappingContext> GameplayMappingContext;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta=(AllowPrivateAccess = true))
+	TObjectPtr<UInputAction> PauseAction;
+	
 };

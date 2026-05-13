@@ -29,7 +29,8 @@ public class Sira : ModuleRules
 			"GameplayTags",
 			"NavigationSystem",
 			"ProceduralMeshComponent",
-			"PoissonPoints",
+			"PoissonPoints", 
+			"Niagara",
 		});
 
 		// Uncomment if you are using Slate UI

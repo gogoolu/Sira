@@ -27,7 +27,8 @@ ANormalEnemy::ANormalEnemy()
 void ANormalEnemy::BeginPlay()
 {
 	Super::BeginPlay();
-	
+	// 添加敌人标签
+	AbilitySystemComponent->AddLooseGameplayTag(SiraGameplayTags::TAG_Character_Enemy);
 	SiraAttributeComponent->Init();
 }
 

@@ -72,4 +72,10 @@ public:
 		}
 		return Result;
 	}
+	
+	UFUNCTION(Category="Game", meta=(WorldContext="WorldContextObject", UnsafeDuringActorConstruction="true"))
+	static void SimplyShowMouse(const UObject* WorldContextObject, bool bShow);
+	
+	UFUNCTION(BlueprintPure, Category="Game", meta=(WorldContext="WorldContextObject", UnsafeDuringActorConstruction="true"))
+	static APlayerCameraManager* GetCameraManger(const UObject* WorldContextObject);
 };

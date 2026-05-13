@@ -15,11 +15,6 @@ ASiraCharacter::ASiraCharacter()
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("ASC"));
 }
 
-void ASiraCharacter::Attack()
-{
-	
-}
-
 // Called when the game starts or when spawned
 void ASiraCharacter::BeginPlay()
 {
@@ -27,8 +22,8 @@ void ASiraCharacter::BeginPlay()
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
-		auto HPAttr = UBaseAttributeSet::GetHPAttribute();
-		AbilitySystemComponent->RegisterGameplayTagEvent(FSiraGameplayTags::GetTag_LifeState_Dead()).AddUObject(this, &ThisClass::OnDead);
+		
+		AbilitySystemComponent->RegisterGameplayTagEvent(SiraGameplayTags::TAG_LifeState_Dead).AddUObject(this, &ThisClass::OnDead);
 	}
 }
 

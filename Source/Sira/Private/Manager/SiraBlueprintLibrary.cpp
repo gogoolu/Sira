@@ -43,3 +43,20 @@ int32 USiraBlueprintLibrary::GetActorsCount(const UObject* WorldContextObject, T
 	}
 	return Result;
 }
+
+void USiraBlueprintLibrary::SimplyShowMouse(const UObject* WorldContextObject, bool bShow)
+{
+	if (auto PC = GetSiraPlayerController(WorldContextObject))
+	{
+		PC->SetShowMouseCursor(bShow);
+	}
+}
+
+APlayerCameraManager* USiraBlueprintLibrary::GetCameraManger(const UObject* WorldContextObject)
+{
+	if (auto PC = UGameplayStatics::GetPlayerController(WorldContextObject, 0))
+	{
+		return PC->PlayerCameraManager;
+	}
+	return nullptr;
+}

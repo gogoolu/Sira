@@ -10,7 +10,12 @@
 class ASiraPlayerController;
 class ATerrainGenerator;
 class ANormalEnemy;
+class UNiagaraSystem;
+
 struct FLevelInfoRow;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemyTakeDamage, float, Damage);
+
 
 UCLASS()
 class SIRA_API ASiraGameMode : public AGameModeBase
@@ -48,6 +53,15 @@ public:
 	void StopGenerateEnemies();
 	
 	void HandleLevelOver();
+	
+	UFUNCTION(BlueprintCallable)
+	void K2_ShowDamageNumber(float Damage, const FVector SpawnLocation, int32 DamageLevel = 0) const;
+	
+	void ShowDamageNumber(float Damage, const FVector& SpawnLocation, int32 DamageLevel = 0) const;
+	
+	// Global Events =============
+	UPROPERTY(BlueprintAssignable)
+	FOnEnemyTakeDamage OnEnemyTakeDamage;
 
 private:
 	void GenerateEnemies();
@@ -95,4 +109,11 @@ private:
 	
 
 	TWeakObjectPtr<ATerrainGenerator> TerrainGenerator;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "SiraGameplay")
+	TObjectPtr<UNiagaraSystem> DamageNumberNS;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "SiraGameplay")
+	TArray<FLinearColor> DamageNumberColors;
+	
 };

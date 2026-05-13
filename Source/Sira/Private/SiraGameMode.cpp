@@ -6,6 +6,8 @@
 
 #include <random>
 #include "NavigationSystem.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "SiraLog.h"
 #include "Blueprint/UserWidget.h"
 #include "Manager/SiraBlueprintLibrary.h"
@@ -54,15 +56,61 @@ void ASiraGameMode::HandleLevelOver()
 			}
 		}
 	}
-	
-	if (auto PC = USiraBlueprintLibrary::GetSiraPlayerController(GetWorld()))
-	{
-		PC->SetShowMouseCursor(true);
-		FInputModeUIOnly InputMode;
-		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
-		PC->SetInputMode(InputMode);
-	}
+	USiraBlueprintLibrary::SimplyShowMouse(GetWorld(), true);
 	UGameplayStatics::SetGamePaused(GetWorld(), true);
+}
+
+void ASiraGameMode::K2_ShowDamageNumber(float Damage, const FVector SpawnLocation, int32 DamageLevel) const
+{
+	ShowDamageNumber(Damage, SpawnLocation, DamageLevel);
+}
+
+void ASiraGameMode::ShowDamageNumber(float Damage, const FVector& SpawnLocation, int32 DamageLevel) const
+{
+	if (!DamageNumberNS)
+	{
+		UE_LOG(LogSira, Warning, TEXT("[ASiraPlayer::ShowDamageNumber] DamageNumberNS is NULL"));
+		return;
+	}
+
+	float RightOffset = FMath::FRandRange(-100.f, 100.f);
+	float UpOffset = FMath::FRandRange(-100.0f, 100.0f);
+	
+	auto CameraManger = USiraBlueprintLibrary::GetCameraManger(GetWorld());
+	if (!CameraManger)
+	{
+		return;
+	}
+	auto CameraRotation = CameraManger->GetCameraRotation();
+	auto RotationMatrix = FRotationMatrix(CameraRotation);
+	
+	auto CameraRightDirection = RotationMatrix.GetUnitAxis(EAxis::Y);
+	auto CameraUpDirection = RotationMatrix.GetUnitAxis(EAxis::Z);
+
+	int32 DamageInteger = FMath::RoundToInt(Damage);
+	int32 Index = 0;
+	while (DamageInteger > 0)
+	{
+		constexpr float DamageNumberSpacing = 30.f;
+		FVector FinalSpawnLocation = SpawnLocation - CameraRightDirection * DamageNumberSpacing * Index 
+			+ CameraRightDirection * RightOffset
+			+ CameraUpDirection * UpOffset;
+	
+		int32 RightDecimalDigit = DamageInteger % 10;
+	
+		auto DamageNiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DamageNumberNS, FinalSpawnLocation);
+		DamageNiagaraComp->SetFloatParameter(TEXT("DamageDigit"), RightDecimalDigit);
+		if (DamageNumberColors.Num() > DamageLevel)
+		{
+			DamageNiagaraComp->SetColorParameter(TEXT("DigitalColor"), DamageNumberColors[DamageLevel]);
+		} else
+		{
+			UE_LOG(LogSira, Warning, TEXT("[ASiraPlayer::ShowDamageNumber] Damage Level has no match Color, DamageLevel: %d"), DamageLevel);
+		}
+
+		DamageInteger /= 10;
+		Index++;
+	}
 }
 
 // when old game level finished trigger the function

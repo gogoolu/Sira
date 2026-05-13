@@ -28,6 +28,11 @@ USiraUniquePanel* USiraUIGameSubsystem::GetOrCreateWidget(FName Key)
 	} else
 	{
 		auto Row = UniquePanelTable->FindRow<FUniquePanelRow>(Key, __func__);
+		if (!Row)
+		{
+			UE_LOG(LogSira, Error, TEXT("[USiraUIManager::GetOrCreateWidget] Widget Not Found, Key: %s"), *Key.ToString());
+			return nullptr;
+		}
 		WidgetClass = Row->UniquePanelSoftClass.LoadSynchronous();
 		if (!WidgetClass)
 		{

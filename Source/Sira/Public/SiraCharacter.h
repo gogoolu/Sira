@@ -24,8 +24,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abilities")
 	UAbilitySystemComponent* AbilitySystemComponent;
 	
-	UFUNCTION(BlueprintCallable, Category = "Abilities")
-	virtual void Attack();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

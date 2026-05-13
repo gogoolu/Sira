@@ -1,9 +1,21 @@
 ﻿#pragma once
-#include "GameplayTagContainer.h"
 
-class FSiraGameplayTags
+#include "NativeGameplayTags.h"
+
+
+namespace SiraGameplayTags
 {
-public:
-	static FGameplayTag GetTag_LifeState_Dead();
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Character);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Character_Enemy);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Character_Player);
 	
-};
+	
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Attack);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Attack_Melee);
+
+
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_LifeState);
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_LifeState_Dead);
+	
+
+}

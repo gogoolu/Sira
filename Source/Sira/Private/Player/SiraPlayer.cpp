@@ -5,6 +5,9 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "SiraLog.h"
 #include "SiraPlayerController.h"
 #include "AttributeSet/BaseAttributeSet.h"
 #include "Camera/CameraComponent.h"
@@ -12,6 +15,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Manager/SiraGameplayTags.h"
 
 
 ASiraPlayer::ASiraPlayer()
@@ -44,18 +48,20 @@ ASiraPlayer::ASiraPlayer()
 void ASiraPlayer::BeginPlay()
 {
 	Super::BeginPlay();
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetWorld()->GetFirstPlayerController()))
-	{
-		if (ULocalPlayer* Player = PlayerController->GetLocalPlayer())
-		{	
-			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = Player->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
-			{
-				Subsystem->AddMappingContext(DefaultMapping, 0);
-			}
-		}
-	}
+	
+	AbilitySystemComponent->AddLooseGameplayTag(SiraGameplayTags::TAG_Character_Player);
 	
 	BindAttributeEvent();
+	
+	AbilitySystemComponent->AbilityActivatedCallbacks.AddUObject(this, &ThisClass::OnAbilityActivated);
+}
+
+void ASiraPlayer::OnAbilityActivated(UGameplayAbility* Ability)
+{
+	if (Ability->GetAssetTags().HasTag(SiraGameplayTags::TAG_Attack))
+	{
+		SetSlidingMode(true);
+	}
 }
 
 void ASiraPlayer::BindAttributeEvent()
@@ -105,9 +111,27 @@ void ASiraPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
+		if (!LookAction)
+		{
+			UE_LOG(LogSira, Warning, TEXT("[ASiraPlayer::SetupPlayerInputComponent] LookAction is nullptr"));
+		}
+		if (!MoveAction)
+		{
+			UE_LOG(LogSira, Warning, TEXT("[ASiraPlayer::SetupPlayerInputComponent] MoveAction is nullptr"));
+		}
+		if (!JumpAction)
+		{
+			UE_LOG(LogSira, Warning, TEXT("[ASiraPlayer::SetupPlayerInputComponent] JumpAction is nullptr"));
+		}
+		if (!AttackAction)
+		{
+			UE_LOG(LogSira, Warning, TEXT("[ASiraPlayer::SetupPlayerInputComponent] AttackAction is nullptr"));
+		}
+		
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASiraPlayer::Look);
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASiraPlayer::Move);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ASiraCharacter::Jump);
+		// EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &ASiraPlayer::Attack);
 	}
 }
 
@@ -136,11 +160,10 @@ FVector ASiraPlayer::GetPlayerShootStartPoint() const
 	return GetActorLocation();
 }
 
-void ASiraPlayer::Attack()
-{
-	// Super::Attack();
-	SetSlidingMode(true);
-}
+// void ASiraPlayer::Dash()
+// {
+// 	LaunchCharacter(GetLastMovementInputVector().GetSafeNormal2D() * 1000, false, false);
+// }
 
 void ASiraPlayer::Move(const FInputActionValue &Value)
 {
