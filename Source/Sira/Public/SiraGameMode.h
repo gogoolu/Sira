@@ -14,7 +14,6 @@ class UNiagaraSystem;
 
 struct FLevelInfoRow;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemyTakeDamage, float, Damage);
 
 
 UCLASS()
@@ -60,8 +59,11 @@ public:
 	void ShowDamageNumber(float Damage, const FVector& SpawnLocation, int32 DamageLevel = 0) const;
 	
 	// Global Events =============
-	UPROPERTY(BlueprintAssignable)
-	FOnEnemyTakeDamage OnEnemyTakeDamage;
+	// UPROPERTY(BlueprintAssignable)
+	// FOnEnemyTakeDamage OnEnemyTakeDamage;
+	//
+	// UPROPERTY(BlueprintAssignable)
+	// FOnEnemyDead OnEnemyDead;
 
 private:
 	void GenerateEnemies();

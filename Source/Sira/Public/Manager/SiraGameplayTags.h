@@ -17,5 +17,11 @@ namespace SiraGameplayTags
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_LifeState);
 	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_LifeState_Dead);
 	
+	
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_CoolDown_Placeholder);
+	
+	
 
+	UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_CoolDown);
+	
 }

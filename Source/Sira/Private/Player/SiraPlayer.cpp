@@ -70,7 +70,7 @@ void ASiraPlayer::BindAttributeEvent()
 	{
 		FOnAttributeChangeData AttributeChangeData {};
 		// HP
-		auto HPAttr = UBaseAttributeSet::GetHPAttribute();
+		auto HPAttr = UPlayerAttr::GetHPAttribute();
 		float HP = AbilitySystemComponent->GetNumericAttribute(HPAttr);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(HPAttr)
 		.AddUObject(this, &ThisClass::HandleAttributeChanged);
@@ -81,7 +81,7 @@ void ASiraPlayer::BindAttributeEvent()
 		HandleAttributeChanged(AttributeChangeData);
 		
 		// Max HP
-		auto MaxHPAttr = UBaseAttributeSet::GetMaxHPAttribute();
+		auto MaxHPAttr = UPlayerAttr::GetMaxHPAttribute();
 		float MaxHP = AbilitySystemComponent->GetNumericAttribute(MaxHPAttr);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(MaxHPAttr)
 		.AddUObject(this, &ThisClass::HandleAttributeChanged);
@@ -95,10 +95,10 @@ void ASiraPlayer::BindAttributeEvent()
 
 void ASiraPlayer::HandleAttributeChanged(const FOnAttributeChangeData& Data) const
 {
-	if (Data.Attribute == UBaseAttributeSet::GetHPAttribute())
+	if (Data.Attribute == UPlayerAttr::GetHPAttribute())
 	{
 		OnHPChanged.Broadcast(Data.Attribute, Data.NewValue, Data.OldValue);
-	} else if (Data.Attribute == UBaseAttributeSet::GetMaxHPAttribute())
+	} else if (Data.Attribute == UPlayerAttr::GetMaxHPAttribute())
 	{
 		OnMaxHPChanged.Broadcast(Data.Attribute, Data.NewValue, Data.OldValue);
 	}

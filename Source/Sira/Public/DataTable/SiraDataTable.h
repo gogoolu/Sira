@@ -2,6 +2,7 @@
 
 #include "SiraDataTable.generated.h"
 
+class UGameplayEffect;
 class USiraUniquePanel;
 
 UENUM(BlueprintType)
@@ -44,4 +45,27 @@ struct FUniquePanelRow : public FTableRowBase
 
 private:
 	virtual EDataValidationResult IsDataValid(FDataValidationContext& Context) const override;
+};
+
+
+// 背包物品
+USTRUCT(BlueprintType)
+struct FInventoryItem : public FTableRowBase
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(Editanywhere, BlueprintReadWrite)
+	FName ItemID;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FText ItemName;
+	
+	UPROPERTY(Editanywhere, BlueprintReadWrite)
+	TSubclassOf<UGameplayEffect> BuffEffect;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSoftObjectPtr<UTexture2D> Icon;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FText ItemDescription;
 };
