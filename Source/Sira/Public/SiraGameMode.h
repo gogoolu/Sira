@@ -7,6 +7,7 @@
 
 #include "SiraGameMode.generated.h"
 
+class ADropItem;
 class ASiraPlayerController;
 class ATerrainGenerator;
 class ANormalEnemy;
@@ -14,7 +15,8 @@ class UNiagaraSystem;
 
 struct FLevelInfoRow;
 
-
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnLevelStageChange, int32, CurrentLevel);
+// DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLevelEnd);
 
 UCLASS()
 class SIRA_API ASiraGameMode : public AGameModeBase
@@ -22,6 +24,9 @@ class SIRA_API ASiraGameMode : public AGameModeBase
 	GENERATED_BODY()
 	
 public:
+	
+	ASiraGameMode();
+	
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
@@ -43,7 +48,7 @@ public:
 	
 	ATerrainGenerator* GetTerrainGenerator() const;
 	
-	FLevelInfoRow* GetLevelInfoRow() const;
+	// FLevelInfoRow* GetLevelInfoRow() const;
 	
 	UFUNCTION(BlueprintCallable, Category = "EnemyGeneration")
 	void StartGenerateEnemies();
@@ -51,34 +56,69 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "EnemyGeneration")
 	void StopGenerateEnemies();
 	
-	void HandleLevelOver();
+	UFUNCTION(BlueprintCallable, Category = "Level")
+	int32 GetCurrentLevel() const;
 	
+	// Level Stage ============
+	UFUNCTION()
+	void HandlePlayerDead();
+	
+	void HandleLevelCountDownOver() const;
+	
+	void StopLevelTimer();
+
+	UFUNCTION()
+	void HandleGameFailed(int32 InCurrentLevel);
+	
+	UFUNCTION(BlueprintCallable)
+	void HandleGameSuccess(int32 InCurrentLevel);
+	
+	
+	// Utilities ===========
 	UFUNCTION(BlueprintCallable)
 	void K2_ShowDamageNumber(float Damage, const FVector SpawnLocation, int32 DamageLevel = 0) const;
 	
 	void ShowDamageNumber(float Damage, const FVector& SpawnLocation, int32 DamageLevel = 0) const;
 	
 	// Global Events =============
-	// UPROPERTY(BlueprintAssignable)
-	// FOnEnemyTakeDamage OnEnemyTakeDamage;
-	//
-	// UPROPERTY(BlueprintAssignable)
-	// FOnEnemyDead OnEnemyDead;
+	UPROPERTY(BlueprintAssignable)
+	FOnLevelStageChange OnLevelStart;
+	
+	UPROPERTY(BlueprintAssignable)
+	FOnLevelStageChange OnLevelEnd;
+	
+	UPROPERTY(BlueprintAssignable)
+	FOnLevelStageChange OnLevelFailed;
+	
+	UPROPERTY(BlueprintAssignable)
+	FOnLevelStageChange OnLevelSuccuss;
+	
+	UPROPERTY(BlueprintAssignable)
+	FOnLevelStageChange OnGameSuccess;
+	
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
+	TSubclassOf<ADropItem> DropItemClass;
 
 private:
+	
 	void GenerateEnemies();
+	// 根据配置以及当前关卡数，获取敌人
+	int32 GetRandomEnemy() const;
+	
+	
 	FTimerHandle LevelChangeHandle;
 	FTimerHandle EnemyGenHandle;
+	int32 MaxLevel;
+	
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Terrain")
 	TSubclassOf<ATerrainGenerator> TerrainGeneratorClass;
 	
-	// Enemy Generation Start ===================================================
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="EnemyGeneration", meta = (AllowPrivateAccess = true))
 	TArray<TSubclassOf<ANormalEnemy>> EnemyClasses;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="EnemyGeneration", meta = (AllowPrivateAccess = true))
-	int32 MaxEnemyNum = 10;
+	// Enemy Generation Start ===================================================
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="EnemyGeneration", meta = (AllowPrivateAccess = true))
 	float EnemyGenRate = 1.f;
@@ -96,8 +136,8 @@ private:
 	float EnemyGenMaxRadius = 3000.f;
 	// Enemy Generation End =================================================
 	
-	UPROPERTY(EditDefaultsOnly, Category = "SiraGameplay")
-	UDataTable* LevelInfoDataTable;
+	// UPROPERTY(EditDefaultsOnly, Category = "SiraGameplay")
+	// UDataTable* LevelInfoDataTable;
 	
 	UPROPERTY(BlueprintReadOnly, Category = "SiraGameplay", meta = (AllowPrivateAccess = true))
 	double LevelStartTime = 0;
@@ -106,8 +146,9 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SiraGameplay", meta = (AllowPrivateAccess = true))
 	double LevelChangeTime = 60;
 	
-	UPROPERTY(EditDefaultsOnly, Category = "SiraGameplay")
-	int32 CurrentLevel = 1;
+	// start with 1
+	UPROPERTY(Transient)
+	int32 CurrentLevel = 0;
 	
 
 	TWeakObjectPtr<ATerrainGenerator> TerrainGenerator;

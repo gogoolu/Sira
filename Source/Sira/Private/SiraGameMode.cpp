@@ -14,26 +14,34 @@
 #include "Manager/TerrainGenerator.h"
 #include "DataTable/SiraDataTable.h"
 #include "Enemy/NormalEnemy.h"
+#include "Enemy/SiraEnemyPool.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Manager/Pool.h"
+#include "Manager/SiraConfigSubsystem.h"
 #include "Manager/SiraUIGameInstance.h"
 #include "UI/SiraUniquePanel.h"
 
 
+ASiraGameMode::ASiraGameMode()
+{
+	PrimaryActorTick.bCanEverTick = false;
+}
+
 void ASiraGameMode::BeginPlay()
 {
 	Super::BeginPlay();
-	if (auto GameInstance = GetGameInstance())
+	if (auto SiraPlayerController = USiraBlueprintLibrary::GetSiraPlayerController(GetWorld()))
 	{
-		if (auto UISubsystem = GameInstance->GetSubsystem<USiraUIGameSubsystem>())
+		if (auto Widget = SiraPlayerController->GetOrCreateWidget("WBP_HUD_Main"))
 		{
-			if (auto Widget = UISubsystem->GetOrCreateWidget("WBP_HUD_Main"))
-			{
-				Widget->AddToViewport();
-				Widget->SetVisibility(ESlateVisibility::Visible);
-			}
+			Widget->AddToViewport();
+			Widget->SetVisibility(ESlateVisibility::Visible);
 		}
 	}
+	auto Config = GetGameInstance()->GetSubsystem<USiraConfigSubsystem>();
+	MaxLevel = Config->GetMaxLevel();
+	OnLevelFailed.AddDynamic(this, &ThisClass::HandleGameFailed);
 	StartNewGameLevel();
 }
 
@@ -43,22 +51,35 @@ void ASiraGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	StopGenerateEnemies();
 }
 
-void ASiraGameMode::HandleLevelOver()
+void ASiraGameMode::HandleLevelCountDownOver() const
 {
-	if (auto GameInstance = GetGameInstance())
+	if (auto SiraPlayerController = USiraBlueprintLibrary::GetSiraPlayerController(GetWorld()))
 	{
-		if (auto UISubsystem = GameInstance->GetSubsystem<USiraUIGameSubsystem>())
+		if (auto Widget = SiraPlayerController->GetOrCreateWidget("WBP_Store"))
 		{
-			if (auto Widget = UISubsystem->GetOrCreateWidget("WBP_Store"))
-			{
-				Widget->AddToViewport();
-				Widget->SetVisibility(ESlateVisibility::Visible);
-			}
+			Widget->AddToViewport();
+			Widget->SetVisibility(ESlateVisibility::Visible);
 		}
 	}
 	USiraBlueprintLibrary::SimplyShowMouse(GetWorld(), true);
 	UGameplayStatics::SetGamePaused(GetWorld(), true);
+	if (MaxLevel <= CurrentLevel)
+	{
+		OnGameSuccess.Broadcast(CurrentLevel);
+	} else
+	{
+		OnLevelSuccuss.Broadcast(CurrentLevel);
+		OnLevelEnd.Broadcast(CurrentLevel);
+	}
 }
+
+void ASiraGameMode::HandlePlayerDead()
+{
+	StopLevelTimer();
+	OnLevelFailed.Broadcast(CurrentLevel);
+	OnLevelEnd.Broadcast(CurrentLevel);
+}
+
 
 void ASiraGameMode::K2_ShowDamageNumber(float Damage, const FVector SpawnLocation, int32 DamageLevel) const
 {
@@ -124,6 +145,10 @@ void ASiraGameMode::StartNewGameLevel()
 		Enemy->Die();
 	});
 	
+	// remove all DropItem Actor
+	auto DropItemPool = GetWorld()->GetSubsystem<USiraDropItemPool>();
+	DropItemPool->RecycleAll();
+	
 	if (!TerrainGenerator.IsValid())
 	{
 		TerrainGenerator = GetWorld()->SpawnActor<ATerrainGenerator>(TerrainGeneratorClass, FVector::ZeroVector, FRotator::ZeroRotator);
@@ -160,12 +185,14 @@ void ASiraGameMode::StartNewGameLevel()
 	GetWorld()->GetTimerManager().SetTimer(
 		LevelChangeHandle,
 		this,
-		&ASiraGameMode::HandleLevelOver,
+		&ASiraGameMode::HandleLevelCountDownOver,
 		LevelChangeTime,
 		false
 	);
+	CurrentLevel++;
 	
 	LevelStartTime = GetWorld()->GetTimeSeconds();
+	OnLevelStart.Broadcast(CurrentLevel);
 }
 
 void ASiraGameMode::ResetPlayerToPlayerStart(ASiraPlayerController* PC)
@@ -213,16 +240,16 @@ ATerrainGenerator* ASiraGameMode::GetTerrainGenerator() const
 	return TerrainGenerator.Get();
 }
 
-FLevelInfoRow* ASiraGameMode::GetLevelInfoRow() const
-{
-	FString RowName = FString::FromInt(CurrentLevel);
-	if (auto Row = LevelInfoDataTable->FindRow<FLevelInfoRow>(FName(*RowName), TEXT("")))
-	{
-		return Row;
-	} 
-	UE_LOG(LogSira, Warning, TEXT("[ASiraGameMode::GetLevelInfoRow] Row not exist, RowName: %s"), *RowName)
-	return nullptr;
-}
+// FLevelInfoRow* ASiraGameMode::GetLevelInfoRow() const
+// {
+// 	FString RowName = FString::FromInt(CurrentLevel);
+// 	if (auto Row = LevelInfoDataTable->FindRow<FLevelInfoRow>(FName(*RowName), TEXT("")))
+// 	{
+// 		return Row;
+// 	} 
+// 	UE_LOG(LogSira, Warning, TEXT("[ASiraGameMode::GetLevelInfoRow] Row not exist, RowName: %s"), *RowName)
+// 	return nullptr;
+// }
 
 void ASiraGameMode::StartGenerateEnemies()
 {
@@ -241,12 +268,56 @@ void ASiraGameMode::StopGenerateEnemies()
 	GetWorld()->GetTimerManager().ClearTimer(EnemyGenHandle);
 }
 
+int32 ASiraGameMode::GetCurrentLevel() const
+{
+	return CurrentLevel;
+}
+
+void ASiraGameMode::StopLevelTimer()
+{
+	GetWorld()->GetTimerManager().ClearTimer(LevelChangeHandle);
+}
+
+void ASiraGameMode::HandleGameFailed(int32 InCurrentLevel)
+{
+	auto PC = USiraBlueprintLibrary::GetSiraPlayerController(GetWorld());
+	if (PC == nullptr)
+	{
+		return;
+	}
+	if (auto Widget = PC->GetOrCreateWidget("WBP_GameFailure"))
+	{
+		Widget->AddToViewport();
+		Widget->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+void ASiraGameMode::HandleGameSuccess(int32 InCurrentLevel)
+{
+	auto PC = USiraBlueprintLibrary::GetSiraPlayerController(GetWorld());
+	if (PC == nullptr)
+	{
+		return;
+	}
+	if (auto Widget = PC->GetOrCreateWidget("WBP_GameFailure"))
+	{
+		Widget->AddToViewport();
+		Widget->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
 
 void ASiraGameMode::GenerateEnemies()
 {
 	if (auto Player = USiraBlueprintLibrary::GetSiraPlayer(GetWorld()))
 	{
-		if (USiraBlueprintLibrary::GetActorsCount<ANormalEnemy>(GetWorld()) >= MaxEnemyNum)
+		auto Config = GetGameInstance()->GetSubsystem<USiraConfigSubsystem>();
+		auto LevelConfig = Config->GetLevelConfig(CurrentLevel);
+		if (!LevelConfig)
+		{
+			return;
+		}
+		if (USiraBlueprintLibrary::GetNotHiddenActorsCount<ANormalEnemy>(GetWorld()) >= LevelConfig->MaxEnemyNum)
 		{
 			return;
 		}
@@ -266,19 +337,47 @@ void ASiraGameMode::GenerateEnemies()
 		FHitResult Hit;
 		if (GetWorld()->LineTraceSingleByChannel(Hit, StartTrace, EndTrace, ECC_GameTraceChannel1))
 		{
-			auto RandomEnemyClass = EnemyClasses[FMath::RandRange(0, EnemyClasses.Num() - 1)];
-			float HalfHeight = 500.f;
-			if (auto CDO = RandomEnemyClass->GetDefaultObject<ANormalEnemy>())
+			int32 EnemyID = GetRandomEnemy();
+			auto EnemyPool = GetWorld()->GetSubsystem<USiraEnemyPool>();
+			EnemyPool->SpawnEnemyAsync(FName(FString::FromInt(EnemyID)), {}, {}, 
+		[
+				HitPos = FVector{Hit.Location.X, Hit.Location.Y, Hit.Location.Z},
+				PlayerLocation
+			]
+				(ANormalEnemy* Enemy)
 			{
-				HalfHeight = CDO->GetDefaultHalfHeight();
-			}
-			FVector SpawnLocation {Hit.Location.X, Hit.Location.Y, Hit.Location.Z + HalfHeight};
-			FRotator SpawnRotation = {0, (PlayerLocation - SpawnLocation).ToOrientationRotator().Yaw, 0};
-			GetWorld()->SpawnActor<ANormalEnemy>(
-				RandomEnemyClass,
-				SpawnLocation,
-				SpawnRotation
-			);
+				float HalfHeight = Enemy->GetDefaultHalfHeight();
+				FVector SpawnLocation = {HitPos.X, HitPos.Y, HitPos.Z + HalfHeight};
+				FRotator SpawnRotation = {0, (PlayerLocation - SpawnLocation).ToOrientationRotator().Yaw, 0};
+				
+				Enemy->SetActorLocation(SpawnLocation);
+				Enemy->SetActorRotation(SpawnRotation);
+			});
 		}
 	}
+}
+
+int32 ASiraGameMode::GetRandomEnemy() const
+{
+	auto Config = GetGameInstance()->GetSubsystem<USiraConfigSubsystem>();
+	auto LevelConfig = Config->GetLevelConfig(CurrentLevel);
+	if (!LevelConfig)
+	{
+		return 0;
+	}
+	int32 TotalWeight = 0;
+	for (auto& WeightInfo : LevelConfig->Enemies)
+	{
+		TotalWeight += WeightInfo.Weight;
+	}
+	int32 RandomNum = FMath::RandRange(0, TotalWeight);
+	for (auto& WeightInfo : LevelConfig->Enemies)
+	{
+		if (RandomNum <= WeightInfo.Weight)
+		{
+			return WeightInfo.EnemyID;
+		}
+		RandomNum -= WeightInfo.Weight;
+	}
+	return 0;
 }

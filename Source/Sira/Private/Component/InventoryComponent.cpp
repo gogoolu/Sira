@@ -6,6 +6,7 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Manager/SiraBlueprintLibrary.h"
+#include "Manager/SiraConfigSubsystem.h"
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -32,7 +33,7 @@ int32 UInventoryComponent::GetItemCount(FName ItemID) const
 void UInventoryComponent::AddItem(FName ItemID, int32 Count)
 {
 	ApplyItemBuff(ItemID, Count);
-	Items.Add(ItemID, Count);
+	Items.Add(ItemID, GetItemCount(ItemID) + Count);
 	OnInventoryItemsChanged.Broadcast();
 }
 
@@ -46,44 +47,35 @@ void UInventoryComponent::RemoveItem(FName ItemID, int32 Count)
 	OnInventoryItemsChanged.Broadcast();
 }
 
-TSharedPtr<FStreamableHandle> UInventoryComponent::GetItemIconAsync(FName ItemID, TUniqueFunction<void(UTexture2D*)> OnLoaded)
+void UInventoryComponent::GetItemIconAsync(FName ItemID, TFunction<void(UTexture2D*)> OnLoaded)
 {
 	// 已缓存
 	if (auto Cache = CachedIcons.Find(ItemID))
 	{
 		OnLoaded(*Cache);
-		return nullptr;
+		return;
 	}
-	 
+	
+	auto Config = GetWorld()->GetGameInstance()->GetSubsystem<USiraConfigSubsystem>();
 	// 配置不存在
-	auto Item = InventoryItemConfig->FindRow<FInventoryItem>(ItemID, "");
+	auto Item = Config->GetInventoryItem(ItemID);
 	if (!Item)
 	{
 		OnLoaded(nullptr);
 		UE_LOG(LogSira, Warning, TEXT("[UInventoryComponent::GetItemIconAsync] Do not Find Inventory Item, ItemID: %s"), *ItemID.ToString());
-		return nullptr;
+		return;
 	}
 
-	// 资源未加载，加入回调队列中
-	PendingCallbacks.FindOrAdd(ItemID).Add(MoveTemp(OnLoaded));
-	
-	// 如果该资源正在加载，直接退出等待加载完成后的回调
-	if (LoadingHandles.Contains(ItemID))
-	{
-		return nullptr;
-	}
-	
 	// 首次加载
 	FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
 	
-	auto Handle = Streamable.RequestAsyncLoad(
+	Streamable.RequestAsyncLoad(
 		Item->Icon.ToSoftObjectPath(),
 		FStreamableDelegate::CreateLambda([
-			WeakThis = TWeakObjectPtr<UInventoryComponent>(this),
-			&SoftPtr = Item->Icon, 
+			WeakThis = MakeWeakObjectPtr<UInventoryComponent>(this),
+			&SoftPtr = Item->Icon,
 			&Cache = CachedIcons,
-			&Callbacks = PendingCallbacks,
-			&InnerLoadingHandles = LoadingHandles,
+			Callback = MoveTemp(OnLoaded),
 			ItemID]()
 		{
 			if (!WeakThis.IsValid())
@@ -98,22 +90,23 @@ TSharedPtr<FStreamableHandle> UInventoryComponent::GetItemIconAsync(FName ItemID
 			{
 				// 缓存，并触发所有的回调
 				Cache.Add(ItemID, LoadedIcon);
-				if (auto ItemCallbacks = Callbacks.Find(ItemID))
-				{
-					for (auto& Callback : *ItemCallbacks)
-					{
-						Callback(LoadedIcon);
-					}
-				}
-				
-				Callbacks.Remove(ItemID);
+				Callback(LoadedIcon);
 			}
-			// 删除loadingHandles
-			InnerLoadingHandles.Remove(ItemID);
 		})
 	);
-	LoadingHandles.Add(ItemID, Handle);
-	return Handle;
+}
+
+TArray<FName> UInventoryComponent::GetAllItemID() const
+{
+	TArray<FName> Result;
+	for (auto [ItemID, Count] : Items)
+	{
+		if (Count > 0)
+		{
+			Result.Add(ItemID);
+		}
+	}
+	return Result;
 }
 
 void UInventoryComponent::K2_GetItemIconAsync(FName ItemID, FOnInventoryIconLoaded OnLoaded)
@@ -126,7 +119,8 @@ void UInventoryComponent::K2_GetItemIconAsync(FName ItemID, FOnInventoryIconLoad
 
 void UInventoryComponent::ApplyItemBuff(FName ItemID, int32 Count)
 {
-	if (auto Item = InventoryItemConfig->FindRow<FInventoryItem>(ItemID, ""))
+	auto Config = GetWorld()->GetGameInstance()->GetSubsystem<USiraConfigSubsystem>();
+	if (auto Item = Config->GetInventoryItem(ItemID))
 	{
 		FGameplayEffectContextHandle Context;
 		Context.AddSourceObject(this);

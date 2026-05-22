@@ -5,8 +5,7 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "NiagaraComponent.h"
-#include "NiagaraFunctionLibrary.h"
+#include "SiraGameMode.h"
 #include "SiraLog.h"
 #include "SiraPlayerController.h"
 #include "AttributeSet/BaseAttributeSet.h"
@@ -20,6 +19,8 @@
 
 ASiraPlayer::ASiraPlayer()
 {
+	PrimaryActorTick.bCanEverTick = false;
+	
 	// create SpringArm
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>("CameraBoom");
 	CameraBoom->SetupAttachment(RootComponent);
@@ -54,6 +55,11 @@ void ASiraPlayer::BeginPlay()
 	BindAttributeEvent();
 	
 	AbilitySystemComponent->AbilityActivatedCallbacks.AddUObject(this, &ThisClass::OnAbilityActivated);
+	
+	if (auto GameMode = Cast<ASiraGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		OnPlayerDead.AddDynamic(GameMode, &ASiraGameMode::HandlePlayerDead);
+	}
 }
 
 void ASiraPlayer::OnAbilityActivated(UGameplayAbility* Ability)
@@ -135,14 +141,19 @@ void ASiraPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	}
 }
 
-void ASiraPlayer::Tick(float DeltaTime)
+UInventoryComponent* ASiraPlayer::GetInventoryComponent() const
 {
-	Super::Tick(DeltaTime);
-	if (FDateTime::Now().GetTicks() - LastSlideTime > ETimespan::TicksPerSecond)
-	{
-		SetSlidingMode(false);
-	}
+	return InventoryComponent;
 }
+
+// void ASiraPlayer::Tick(float DeltaTime)
+// {
+// 	Super::Tick(DeltaTime);
+// 	if (FDateTime::Now().GetTicks() - LastSlideTime > ETimespan::TicksPerSecond)
+// 	{
+// 		SetSlidingMode(false);
+// 	}
+// }
 
 FVector ASiraPlayer::GetPlayerShootStartPoint() const
 {
@@ -241,7 +252,16 @@ void ASiraPlayer::SetSlidingMode(bool InSlidingMode)
 	GetCharacterMovement()->bUseControllerDesiredRotation = InSlidingMode;
 	if (InSlidingMode)
 	{
-		LastSlideTime = FDateTime::Now().GetTicks();
+		// LastSlideTime = FDateTime::Now().GetTicks();
+		
+		GetWorld()->GetTimerManager().ClearTimer(SlidingModeTimer);
+		GetWorld()->GetTimerManager().SetTimer(SlidingModeTimer, [WeakThis = MakeWeakObjectPtr(this)]()
+		{
+			if (WeakThis.IsValid())
+			{
+				WeakThis->SetSlidingMode(false);
+			}
+		}, 1.f, false);
 	}
 }
 

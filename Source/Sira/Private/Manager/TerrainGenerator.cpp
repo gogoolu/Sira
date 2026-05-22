@@ -10,6 +10,7 @@
 
 ATerrainGenerator::ATerrainGenerator()
 {
+	PrimaryActorTick.bCanEverTick = false;
 	ProceduralMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ProceduralMesh"));
 	ProceduralMesh->SetCollisionProfileName("Land");
 	SetRootComponent(ProceduralMesh);

@@ -4,9 +4,20 @@
 
 #define LOCTEXT_NAMESPACE "SiraDataTable"
 
+FInventoryItem FInventoryItem::None {};
+#if WITH_EDITOR
+EDataValidationResult FEnemyConfig::IsDataValid(FDataValidationContext& Context) const
+{
+	if (DropRate < 0.f || DropRate > 1.f)
+	{
+		Context.AddError(FText::FromString(FString::Printf(TEXT("DropRate Should in [0, 1]"))));
+		return EDataValidationResult::Invalid;
+	}
+	return EDataValidationResult::Valid;
+}
+
 EDataValidationResult FUniquePanelRow::IsDataValid(FDataValidationContext& Context) const
 {
-	FTableRowBase::IsDataValid(Context);
 	if (UniquePanelSoftClass.IsNull())
 	{
 		Context.AddError(FText::FromString(FString::Printf(TEXT("[FUniquePanelRow::IsDataValid] UniquePanelSoftClass is Null, UIName: %s"), *UIName.ToString())));
@@ -33,3 +44,4 @@ EDataValidationResult FUniquePanelRow::IsDataValid(FDataValidationContext& Conte
 	
 	return EDataValidationResult::Valid;
 }
+#endif

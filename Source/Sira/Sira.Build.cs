@@ -15,7 +15,8 @@ public class Sira : ModuleRules
 			"Engine", 
 			"InputCore", 
 			"EnhancedInput", 
-			"GameplayAbilities"
+			"GameplayAbilities", 
+			"AIModule"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

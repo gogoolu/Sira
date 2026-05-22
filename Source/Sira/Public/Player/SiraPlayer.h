@@ -29,14 +29,14 @@ public:
 	
 	ASiraPlayer();
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
 	
 	UFUNCTION(BlueprintCallable)
 	FVector GetPlayerShootStartPoint() const;
 	
-	
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	
+	UInventoryComponent* GetInventoryComponent() const;
 	
 	UPROPERTY(EditDefaultsOnly)
 	TArray<TObjectPtr<UAnimMontage>> DeathMontages;
@@ -76,6 +76,8 @@ public:
 	FOnPlayerDead OnPlayerDead;
 private:
 	
+	FTimerHandle SlidingModeTimer;
+	
 	// ================ Movement ==================
 	// Action Response
 	void Move(const FInputActionValue &Value);
@@ -83,7 +85,6 @@ private:
 	
 	UPROPERTY(EditDefaultsOnly, Category="Anim")
 	bool bIsSlidingMode;
-	int64 LastSlideTime;
 	
 	// 背包
 	UPROPERTY(visibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = true))

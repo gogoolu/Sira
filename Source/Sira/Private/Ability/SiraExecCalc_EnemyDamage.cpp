@@ -75,6 +75,10 @@ void USiraExecCalc_EnemyDamage::Execute_Implementation(const FGameplayEffectCust
 	
 	auto SourceASC = ExecutionParams.GetSourceAbilitySystemComponent();
 	auto TargetASC = ExecutionParams.GetTargetAbilitySystemComponent();
+	if (!SourceASC || !TargetASC)
+	{
+		return;
+	}
 	UE_LOG(LogSira, Warning, TEXT("[USiraExecCalc_EnemyDamage::Execute_Implementation] Source Owner: %s, Target Owner: %s"), *SourceASC->GetOwner()->GetName(), *TargetASC->GetOwner()->GetName());
 	
 	float Damage = BaseDamage * (1.f + DamagePercent);

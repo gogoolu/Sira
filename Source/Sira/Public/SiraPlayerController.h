@@ -5,6 +5,7 @@
 
 class UInputMappingContext;
 class UInputAction;
+class USiraUniquePanel;
 
 UCLASS()
 class ASiraPlayerController : public APlayerController 
@@ -15,12 +16,17 @@ public:
 	ASiraPlayerController();
 	
 	
+	UFUNCTION(BlueprintCallable)
+	USiraUniquePanel* GetOrCreateWidget(FName Key);
+	
 private:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 	
-	
+	UFUNCTION(BlueprintCallable)
 	void TogglePauseGame();
+	
+	
 	
 	// input ==================
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta=(AllowPrivateAccess = true))
@@ -31,5 +37,11 @@ private:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta=(AllowPrivateAccess = true))
 	TObjectPtr<UInputAction> PauseAction;
+
+	UPROPERTY()
+	TMap<FName, TObjectPtr<USiraUniquePanel>> WidgetMap;
+
+	UPROPERTY()
+	TMap<FName, TSubclassOf<USiraUniquePanel>> WidgetClassMap;
 	
 };

@@ -37,7 +37,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory", DisplayName = "GetItemIconAsync")
 	void K2_GetItemIconAsync(FName ItemID, FOnInventoryIconLoaded Loaded);
 	
-	TSharedPtr<FStreamableHandle> GetItemIconAsync(FName ItemID, TUniqueFunction<void(UTexture2D*)> OnLoaded);
+	void GetItemIconAsync(FName ItemID, TFunction<void(UTexture2D*)> OnLoaded);
+	
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	TArray<FName> GetAllItemID() const;
 	
 	UPROPERTY(BlueprintAssignable)
 	FCoinsNumChanged OnCoinsChanged;
@@ -51,23 +54,17 @@ private:
 	void RemoveItemBuff(FName ItemID, int32 Count);
 	
 	// 背包中的物品, ItemID -> Count
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Inventory", meta = (AllowPrivateAccess = true))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = true))
 	TMap<FName, int32> Items;
 	
 	// ItemID -> GameEffects
 	TMap<FName, TArray<FActiveGameplayEffectHandle>> ActivatedEffects;
 	
 	// 钱
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Inventory", meta = (AllowPrivateAccess = true))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory", meta = (AllowPrivateAccess = true))
 	int64 Coins = 0;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Inventory", meta = (AllowPrivateAccess = true))
-	TObjectPtr<UDataTable> InventoryItemConfig;
 	
 	UPROPERTY(Transient)
 	TMap<FName, TObjectPtr<UTexture2D>> CachedIcons;
-	
-	TMap<FName, TWeakPtr<FStreamableHandle>> LoadingHandles;
-	
-	TMap<FName, TArray<TUniqueFunction<void(UTexture2D*)>>> PendingCallbacks;
 };

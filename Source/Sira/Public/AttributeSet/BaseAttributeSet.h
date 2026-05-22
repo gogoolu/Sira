@@ -47,23 +47,23 @@ class SIRA_API UPlayerAttr : public UAttributeSet
 	
 public:
 	// 血量
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerBaseAttr")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerBaseAttr", meta = (ToolTip="血量"))
 	FGameplayAttributeData HP = 100.f;
 	ATTRIBUTE_ACCESSORS(UPlayerAttr, HP);
 	// 血量上限
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerBaseAttr")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerBaseAttr", meta = (ToolTip="血量上限"))
 	FGameplayAttributeData MaxHP = 100.f;
 	ATTRIBUTE_ACCESSORS(UPlayerAttr, MaxHP);
 	// 基础伤害
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerBaseAttr")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerBaseAttr", meta = (ToolTip="基础伤害"))
 	FGameplayAttributeData BaseDamage = 10.f;
 	ATTRIBUTE_ACCESSORS(UPlayerAttr, BaseDamage);
 	// %攻击速度
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerBaseAttr")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerBaseAttr", meta = (ToolTip="%攻击速度"))
 	FGameplayAttributeData AttackSpeedPercent = 0.f;
 	ATTRIBUTE_ACCESSORS(UPlayerAttr, AttackSpeedPercent);
 	// 护甲:		ReduceDamagePercent = 1 / ( 1 + ( ARMOR / 15 ) ), if Armor <= 0, no effect
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerBaseAttr")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerBaseAttr", meta = (ToolTip="护甲"))
 	FGameplayAttributeData Armor = 0.f;
 	ATTRIBUTE_ACCESSORS(UPlayerAttr, Armor);
 	// // 抢夺:		
@@ -71,7 +71,7 @@ public:
 	// FGameplayAttributeData Looting = 0.f;
 	// ATTRIBUTE_ACCESSORS(UPlayerAttr, Looting);
 	// 生命回复:	HPEveryXSeconds = 5.0 / ( 1.0 + ( ( HP_Regen - 1) / 2.25 ) )
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerBaseAttr")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerBaseAttr", meta = (ToolTip="生命回复"))
 	FGameplayAttributeData HPRegen = 0.f;
 	ATTRIBUTE_ACCESSORS(UPlayerAttr, HPRegen);
 
@@ -86,15 +86,15 @@ class SIRA_API UPlayerModAttr : public UAttributeSet
 	
 public:
 	// damage = (BaseDamage + FlatDamageBonus) * (1 + DamagePercent)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerModAttr", meta = (ToolTips = "+伤害"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerModAttr", meta = (ToolTip = "+伤害"))
 	FGameplayAttributeData FlatDamageBonus = 0.f;
 	ATTRIBUTE_ACCESSORS(UPlayerModAttr, FlatDamageBonus);
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerModAttr", meta = (ToolTips = "%伤害"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerModAttr", meta = (ToolTip = "%伤害"))
 	FGameplayAttributeData DamagePercent = 0.f;
 	ATTRIBUTE_ACCESSORS(UPlayerModAttr, DamagePercent);
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerModAttr", meta = (ToolTips = "%暴击率"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UPlayerModAttr", meta = (ToolTip = "%暴击率"))
 	FGameplayAttributeData CriticalRate = 0.25f;
 	ATTRIBUTE_ACCESSORS(UPlayerModAttr, CriticalRate);
 	

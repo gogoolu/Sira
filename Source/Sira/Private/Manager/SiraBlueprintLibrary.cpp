@@ -1,6 +1,7 @@
 ﻿#include "Manager/SiraBlueprintLibrary.h"
 
 #include "SiraLog.h"
+#include "AttributeSet/BaseAttributeSet.h"
 #include "Kismet/GameplayStatics.h"
 
 ASiraPlayerController* USiraBlueprintLibrary::GetSiraPlayerController(const UObject* WorldContextObject)
@@ -31,6 +32,11 @@ float USiraBlueprintLibrary::GetSiraPlayerAttribute(const ASiraPlayer* TargetPla
 	return 0.0f;
 }
 
+FString USiraBlueprintLibrary::GetAttributeName(const FGameplayAttribute& Attribute)
+{
+	return Attribute.AttributeName;
+}
+
 int32 USiraBlueprintLibrary::GetActorsCount(const UObject* WorldContextObject, TSubclassOf<AActor> Class)
 {
 	int32 Result = 0;
@@ -49,6 +55,13 @@ void USiraBlueprintLibrary::SimplyShowMouse(const UObject* WorldContextObject, b
 	if (auto PC = GetSiraPlayerController(WorldContextObject))
 	{
 		PC->SetShowMouseCursor(bShow);
+		if (bShow)
+		{
+			PC->SetInputMode(FInputModeGameAndUI {});
+		} else
+		{
+			PC->SetInputMode(FInputModeGameOnly {});
+		}
 	}
 }
 
@@ -59,4 +72,22 @@ APlayerCameraManager* USiraBlueprintLibrary::GetCameraManger(const UObject* Worl
 		return PC->PlayerCameraManager;
 	}
 	return nullptr;
+}
+
+
+TArray<FAttributeDisplayInfo> USiraBlueprintLibrary::GetAllPlayerAttributeDisplayInfos()
+{
+	TArray<FAttributeDisplayInfo> Attributes;
+	Attributes.Add({UPlayerAttr::GetHPAttribute(), FText::FromString(TEXT("HP"))});
+	Attributes.Add({UPlayerAttr::GetMaxHPAttribute(), FText::FromString(TEXT("MaxHP"))});
+	Attributes.Add({UPlayerAttr::GetBaseDamageAttribute(), FText::FromString(TEXT("基础伤害"))});
+	Attributes.Add({UPlayerAttr::GetAttackSpeedPercentAttribute(), FText::FromString(TEXT("%攻击速度"))});
+	Attributes.Add({UPlayerAttr::GetArmorAttribute(), FText::FromString(TEXT("护甲"))});
+	Attributes.Add({UPlayerAttr::GetHPRegenAttribute(), FText::FromString(TEXT("生命回复"))});
+	
+	Attributes.Add({UPlayerModAttr::GetFlatDamageBonusAttribute(), FText::FromString(TEXT("+基础伤害加成"))});
+	Attributes.Add({UPlayerModAttr::GetDamagePercentAttribute(), FText::FromString(TEXT("%伤害百分比加成"))});
+	Attributes.Add({UPlayerModAttr::GetCriticalRateAttribute(), FText::FromString(TEXT("%暴击率"))});
+	
+	return Attributes;
 }

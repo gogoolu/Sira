@@ -8,17 +8,15 @@
 
 // manage attribute bar and make it face to camera 
 UCLASS(ClassGroup=(Sira), meta=(BlueprintSpawnableComponent), BlueprintType, Blueprintable)
-class UAttributeBillboardComponent : public UMaterialBillboardComponent, public IAttributeListenable
+class UAttributeBillboardComponent : public UMaterialBillboardComponent
 {
 	GENERATED_BODY()
 	
 public:
-	virtual void GetListenAttributes_Implementation(TArray<FGameplayAttribute>& OutAttributes) override;
+	void UpdateAttributeBarByASC(const UAbilitySystemComponent* ASC) const;
+	void SetAttributeBarPercent(float Percent) const;
+	
 private:
-	
 	virtual void BeginPlay() override;
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Attribute")
-	TArray<FGameplayAttribute> ListenAttributes;
 };
 

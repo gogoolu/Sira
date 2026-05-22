@@ -7,49 +7,76 @@
 
 #include "NormalEnemy.generated.h"
 
+class UAttributeBillboardComponent;
 class USiraAttributeComponent;
 
-UENUM()
-enum class EEnemyLifeState : uint8
-{
-	Alive,
-	PendingDeath,
-	Dead,
-};
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeath);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPendingDeath);
+DECLARE_MULTICAST_DELEGATE(FOnEnemyAttackFinished)
 
 UCLASS()
-class SIRA_API ANormalEnemy : public ASiraCharacter
+class SIRA_API ANormalEnemy : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	ANormalEnemy();
 	
-	// Called every frame
-	// virtual void Tick(float DeltaTime) override;
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	
-private:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-
-public:	
-	// Mark pending die and play montage
-	virtual void OnDead(FGameplayTag Tag, int32 Count) override;
+	UFUNCTION(BlueprintCallable)
+	int32 GetEnemyID() const;
 	
-	// bind Death AnimNotify, real destroy
+	void MeleeAttack();
+	
+	void RangedAttack();
+	
+	UFUNCTION(BlueprintCallable)
+	bool IsAttacking() const;
+	
+	virtual void OnDead(FGameplayTag Tag, int32 Count);
+	
 	virtual void Die();
+
+	// 在 BeginPlay 以及从对象池中取出来时调用
+	virtual void InitEnemy();
 	
-	UPROPERTY(visibleAnywhere, BlueprintReadOnly)
-	EEnemyLifeState LifeState = EEnemyLifeState::Alive;
+	// 回收敌人到对象池时， 重置 ASC 状态 
+	void ResetGASState();
+
+	// 生成掉落物
+	void DropItem() const;
+	
+	UFUNCTION(BlueprintNativeEvent)
+	void GiveStartAbilities();
+	
+	// 触发更新血条
+	void TriggerUpdateAttributeBar() const;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	TObjectPtr<USiraAttributeComponent> SiraAttributeComponent;
-
-	// Called to bind functionality to input
-	// virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
+	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TObjectPtr<UAttributeBillboardComponent> AttributeBillboard;
+	
+	FOnEnemyAttackFinished OnMeleeAttackFinished;
+	FOnEnemyAttackFinished OnRangedAttackFinished;
+	
+private:
+	virtual void BeginPlay() override;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
+	int32 EnemyID;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
+	TSubclassOf<UGameplayAbility> MeleeGA;
+	FGameplayAbilitySpecHandle MeleeAttackSpecHandle;
+	
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
+	TSubclassOf<UGameplayAbility> RangedGA;
+	FGameplayAbilitySpecHandle RangedAttackSpecHandle;
+	
+	
 };

@@ -39,6 +39,7 @@ void UEnemyAttr::PostGameplayEffectExecute(const FGameplayEffectModCallbackData&
 						FVector DamageNumberLocation = Enemy->GetActorLocation() + FVector{0, 0, Enemy->GetCapsuleComponent()->GetScaledCapsuleHalfHeight()};
 						GameMode->ShowDamageNumber(Damage, DamageNumberLocation);
 					}
+					Enemy->TriggerUpdateAttributeBar();
 				}
 			}
 			
