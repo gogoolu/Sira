@@ -43,6 +43,10 @@ void ASiraPlayerController::TogglePauseGame()
 		{
 			Widget->AddToViewport();
 			Widget->SetVisibility(ESlateVisibility::Visible);
+			if (auto Function = Widget->FindFunction("UpdateAttribute"))
+			{
+				Widget->ProcessEvent(Function, nullptr);
+			}
 		}
 		USiraBlueprintLibrary::SimplyShowMouse(GetWorld(), true);
 		SetPause(true);

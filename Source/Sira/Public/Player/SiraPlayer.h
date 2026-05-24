@@ -71,7 +71,7 @@ public:
 	
 	UPROPERTY(BlueprintAssignable, Category = "Attribute")
 	FOnAttributeChanged OnMaxHPChanged;
-	
+
 	UPROPERTY(BlueprintAssignable, Category="Attribute")
 	FOnPlayerDead OnPlayerDead;
 private:

@@ -33,6 +33,7 @@ public class Sira : ModuleRules
 			"ProceduralMeshComponent",
 			"PoissonPoints", 
 			"Niagara",
+			"GameplayTasks",
 		});
 
 		// Uncomment if you are using Slate UI

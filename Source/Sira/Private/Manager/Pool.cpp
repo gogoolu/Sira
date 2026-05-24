@@ -3,6 +3,8 @@
 #include "EngineUtils.h"
 #include "SiraGameMode.h"
 #include "SiraLog.h"
+#include "Manager/SiraBlueprintLibrary.h"
+#include "SiraGamePlay/Projectile.h"
 
 ADropItem* USiraDropItemPool::Get()
 {
@@ -57,5 +59,67 @@ void USiraDropItemPool::RecycleAll()
 			Recycle(*It);
 		}
 	}
+}
+
+void UProjectilePool::RecycleAll()
+{
+	SiraUtilities::CallForAllActors<AProjectile>(GetWorld(), [this](AProjectile* Projectile)
+	{
+		Recycle(Projectile);
+	});
+}
+
+void UProjectilePool::Recycle(AProjectile* Projectile)
+{
+	if (!Projectile)
+	{
+		return;
+	}
+	
+	auto Class = Projectile->GetClass();
+	auto& Projectiles = Pool.FindOrAdd(Class);
+	Projectile->SetActorHiddenInGame(true);
+	Projectile->SetActorEnableCollision(false);
+	if (!Projectiles.Contains(Projectile))
+	{
+		Projectiles.Add(Projectile);
+	}
+}
+
+AProjectile* UProjectilePool::Get(TSubclassOf<AProjectile> ProjectileClass, const FActorSpawnParameters& Parameters,
+	const FVector& Location, const FRotator& Rotation)
+{
+	if (!ProjectileClass)
+	{
+		return nullptr;
+	}
+	if (auto Projectiles = Pool.Find(ProjectileClass))
+	{
+		for (auto Projectile : *Projectiles)
+		{
+			if (Projectile && Projectile->IsHidden())
+			{
+				Projectile->SetActorLocation(Location);
+				Projectile->SetActorRotation(Rotation);
+				Projectile->SetActorHiddenInGame(false);
+				Projectile->SetActorEnableCollision(true);
+				Projectile->ResetProjectile();
+				Projectile->SetOwner(Parameters.Owner);
+				Projectile->SetInstigator(Parameters.Instigator);
+				return Projectile;
+			}
+		}
+	}
+	auto Projectile = GetWorld()->SpawnActor<AProjectile>(ProjectileClass, Location, Rotation, Parameters);
+	if (Projectile)
+	{
+		if (!Pool.Find(ProjectileClass))
+		{
+			Pool.Add(ProjectileClass);
+		}
+		auto Projectiles = Pool.Find(ProjectileClass);
+		Projectiles->Add(Projectile);
+	}
+	return Projectile;
 }
 

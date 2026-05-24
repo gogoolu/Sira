@@ -133,4 +133,6 @@ public:
 	UFUNCTION(BlueprintPure, Category="Game")
 	static TArray<FAttributeDisplayInfo> GetAllPlayerAttributeDisplayInfos();
 	
+	UFUNCTION(BlueprintPure, Category="Game")
+	static bool IsPercentAttribute(const FGameplayAttribute& Attribute);
 };

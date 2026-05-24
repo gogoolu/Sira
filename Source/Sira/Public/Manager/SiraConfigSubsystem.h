@@ -27,6 +27,10 @@ public:
 	const FInventoryItem* GetInventoryItem(FName Key) const;
 	const FInventoryItem* GetInventoryItem(int32 Key) const;
 	
+	UFUNCTION(BlueprintCallable)
+	FName GetRandomInventoryItem() const;
+	int32 GetMaxInventoryNum() const;
+	
 	
 	// 敌人配置表
 	const FEnemyConfig* GetEnemyConfig(FName Key) const;

@@ -58,7 +58,31 @@ const FInventoryItem* USiraConfigSubsystem::GetInventoryItem(FName Key) const
 
 const FInventoryItem* USiraConfigSubsystem::GetInventoryItem(int32 Key) const
 {
-	return GetInventoryItem(FName(FString::FromInt(Key)));
+	return GetInventoryItem(FName(*FString::FromInt(Key)));
+}
+
+FName USiraConfigSubsystem::GetRandomInventoryItem() const
+{
+	if (InventoryItemConfig)
+	{
+		TArray<FName> RowNames = InventoryItemConfig->GetRowNames();
+
+		if (RowNames.Num() > 0)
+		{
+			int32 RandomIndex = FMath::RandRange(0, RowNames.Num() - 1);
+			return RowNames[RandomIndex];
+		}
+	}
+	return NAME_None;
+}
+
+int32 USiraConfigSubsystem::GetMaxInventoryNum() const
+{
+	if (InventoryItemConfig)
+	{
+		return InventoryItemConfig->GetRowMap().Num();
+	}
+	return 0;
 }
 
 const FDropConfig* USiraConfigSubsystem::GetDropConfig(FName Key) const
@@ -73,14 +97,14 @@ const FDropConfig* USiraConfigSubsystem::GetDropConfig(FName Key) const
 
 const FDropConfig* USiraConfigSubsystem::GetDropConfig(int32 Key) const
 {
-	return GetDropConfig(FName(FString::FromInt(Key)));
+	return GetDropConfig(FName(*FString::FromInt(Key)));
 }
 
 const FLevelConfig* USiraConfigSubsystem::GetLevelConfig(int32 Key) const
 {
 	if (LevelConfig)
 	{
-		return LevelConfig->FindRow<FLevelConfig>(FName(FString::FromInt(Key)), "");
+		return LevelConfig->FindRow<FLevelConfig>(FName(*FString::FromInt(Key)), "");
 	}
 	UE_LOG(LogSira, Warning, TEXT("[USiraConfigSubsystem::GetLevelConfig] DropConfig is nullptr, Key: %d"), Key);
 	return nullptr;
@@ -114,5 +138,5 @@ const FEnemyConfig* USiraConfigSubsystem::GetEnemyConfig(FName Key) const
 
 const FEnemyConfig* USiraConfigSubsystem::GetEnemyConfig(int32 Key) const
 {
-	return GetEnemyConfig(FName(FString::FromInt(Key)));
+	return GetEnemyConfig(FName(*FString::FromInt(Key)));
 }

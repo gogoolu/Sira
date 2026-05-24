@@ -57,7 +57,7 @@ struct FEnemyConfig : public FTableRowBase
 	GENERATED_BODY()
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 EnemyID;
+	int32 EnemyID = 0;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 DropCoins = 0;
@@ -66,7 +66,7 @@ struct FEnemyConfig : public FTableRowBase
 	float DropRate = 0.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 DropConfigID;
+	int32 DropConfigID = 0;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSoftClassPtr<ANormalEnemy> EnemyClass;

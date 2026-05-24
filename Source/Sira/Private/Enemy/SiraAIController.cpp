@@ -23,7 +23,7 @@ void ASiraAIController::OnPossess(APawn* InPawn)
 	if (auto EnemyConfig = Config->GetEnemyConfig(Enemy->GetEnemyID()))
 	{
 		auto PendingLoadBehaviorTree = EnemyConfig->BehaviorTree;
-		if (!PendingLoadBehaviorTree)
+		if (PendingLoadBehaviorTree.IsNull())
 		{
 			return;
 		}

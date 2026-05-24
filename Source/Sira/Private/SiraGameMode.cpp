@@ -42,6 +42,7 @@ void ASiraGameMode::BeginPlay()
 	auto Config = GetGameInstance()->GetSubsystem<USiraConfigSubsystem>();
 	MaxLevel = Config->GetMaxLevel();
 	OnLevelFailed.AddDynamic(this, &ThisClass::HandleGameFailed);
+	OnGameSuccess.AddDynamic(this, &ThisClass::HandleGameSuccess);
 	StartNewGameLevel();
 }
 
@@ -53,14 +54,6 @@ void ASiraGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void ASiraGameMode::HandleLevelCountDownOver() const
 {
-	if (auto SiraPlayerController = USiraBlueprintLibrary::GetSiraPlayerController(GetWorld()))
-	{
-		if (auto Widget = SiraPlayerController->GetOrCreateWidget("WBP_Store"))
-		{
-			Widget->AddToViewport();
-			Widget->SetVisibility(ESlateVisibility::Visible);
-		}
-	}
 	USiraBlueprintLibrary::SimplyShowMouse(GetWorld(), true);
 	UGameplayStatics::SetGamePaused(GetWorld(), true);
 	if (MaxLevel <= CurrentLevel)
@@ -68,6 +61,18 @@ void ASiraGameMode::HandleLevelCountDownOver() const
 		OnGameSuccess.Broadcast(CurrentLevel);
 	} else
 	{
+		if (auto SiraPlayerController = USiraBlueprintLibrary::GetSiraPlayerController(GetWorld()))
+		{
+			if (auto Widget = SiraPlayerController->GetOrCreateWidget("WBP_Store"))
+			{
+				Widget->AddToViewport();
+				Widget->SetVisibility(ESlateVisibility::Visible);
+				if (auto Function = Widget->FindFunction("UpdateAttribute"))
+				{
+					Widget->ProcessEvent(Function, nullptr);
+				}
+			}
+		}
 		OnLevelSuccuss.Broadcast(CurrentLevel);
 		OnLevelEnd.Broadcast(CurrentLevel);
 	}
@@ -144,6 +149,8 @@ void ASiraGameMode::StartNewGameLevel()
 	{
 		Enemy->Die();
 	});
+	auto ProjectilePool = GetWorld()->GetSubsystem<UProjectilePool>();
+	ProjectilePool->RecycleAll();
 	
 	// remove all DropItem Actor
 	auto DropItemPool = GetWorld()->GetSubsystem<USiraDropItemPool>();
@@ -273,6 +280,21 @@ int32 ASiraGameMode::GetCurrentLevel() const
 	return CurrentLevel;
 }
 
+int32 ASiraGameMode::GetMaxLevel() const
+{
+	return MaxLevel;
+}
+
+float ASiraGameMode::GetGameProgress() const
+{
+	return static_cast<float>(CurrentLevel) / static_cast<float>(MaxLevel);
+}
+
+float ASiraGameMode::GetGameProgressEnemyDamagePercent() const
+{
+	return GetGameProgress() * 5.f;
+}
+
 void ASiraGameMode::StopLevelTimer()
 {
 	GetWorld()->GetTimerManager().ClearTimer(LevelChangeHandle);
@@ -299,13 +321,47 @@ void ASiraGameMode::HandleGameSuccess(int32 InCurrentLevel)
 	{
 		return;
 	}
-	if (auto Widget = PC->GetOrCreateWidget("WBP_GameFailure"))
+	PC->SetPause(true);
+	USiraBlueprintLibrary::SimplyShowMouse(GetWorld(), true);
+	if (auto Widget = PC->GetOrCreateWidget("WBP_Success"))
 	{
 		Widget->AddToViewport();
 		Widget->SetVisibility(ESlateVisibility::Visible);
 	}
 }
 
+
+int32 ASiraGameMode::GetShouldGenerateEnemiesNum() const
+{
+	auto Config = GetGameInstance()->GetSubsystem<USiraConfigSubsystem>();
+	auto LevelConfig = Config->GetLevelConfig(CurrentLevel);
+	if (!LevelConfig)
+	{
+		return 0;
+	}
+	auto Pool = GetWorld()->GetSubsystem<USiraEnemyPool>();
+	int32 CurrentEnemiesNum = Pool->GetCurrentEnemiesNum();
+	
+	float EnemiesRatio = static_cast<float>(CurrentEnemiesNum) / static_cast<float>(LevelConfig->MaxEnemyNum);
+	float EnemyPressure = 1.f - EnemiesRatio;
+	float TimerPressure = GetLevelElapsedTime() / LevelChangeTime;
+	
+	float TimeFactor = FMath::Pow(TimerPressure, 2.f);
+	
+	const float SpawnFactor =
+	EnemyPressure * 0.7f +
+	TimeFactor   * 0.3f;
+	
+	constexpr int32 MaxSpawnPerTick = 10;
+	
+	int32 SpawnCount = FMath::CeilToInt(SpawnFactor * MaxSpawnPerTick);
+	
+	SpawnCount = FMath::Min(
+		SpawnCount,
+		LevelConfig->MaxEnemyNum - CurrentEnemiesNum);
+	
+	return FMath::Max(SpawnCount, 0);
+}
 
 void ASiraGameMode::GenerateEnemies()
 {
@@ -321,39 +377,43 @@ void ASiraGameMode::GenerateEnemies()
 		{
 			return;
 		}
-		
 		auto GetRandomSpawnLocation = [MinRadius = EnemyGenMinRadius, MaxRadius = EnemyGenMaxRadius]() -> FVector2D
 		{
 			float RandomDistance = FMath::FRandRange(MinRadius, MaxRadius);
 			float RandomAngle = FMath::FRandRange(0.f, 2.f * PI);
 			return {FMath::Cos(RandomAngle) * RandomDistance, FMath::Sin(RandomAngle) * RandomDistance};
 		};
-		
 		auto PlayerLocation = Player->GetActorLocation();
-		auto RandomOffset = GetRandomSpawnLocation();
-		FVector StartTrace {PlayerLocation.X + RandomOffset.X, PlayerLocation.Y + RandomOffset.Y, 20000};
-		FVector EndTrace {StartTrace.X, StartTrace.Y, -20000};
-		// line trace Terrain
-		FHitResult Hit;
-		if (GetWorld()->LineTraceSingleByChannel(Hit, StartTrace, EndTrace, ECC_GameTraceChannel1))
+		
+		int32 SpawnCount = GetShouldGenerateEnemiesNum();
+		auto EnemyPool = GetWorld()->GetSubsystem<USiraEnemyPool>();
+		for (int32 i = 0; i < SpawnCount; i++)
 		{
-			int32 EnemyID = GetRandomEnemy();
-			auto EnemyPool = GetWorld()->GetSubsystem<USiraEnemyPool>();
-			EnemyPool->SpawnEnemyAsync(FName(FString::FromInt(EnemyID)), {}, {}, 
-		[
-				HitPos = FVector{Hit.Location.X, Hit.Location.Y, Hit.Location.Z},
-				PlayerLocation
-			]
-				(ANormalEnemy* Enemy)
+			auto RandomOffset = GetRandomSpawnLocation();
+			FVector StartTrace {PlayerLocation.X + RandomOffset.X, PlayerLocation.Y + RandomOffset.Y, 20000};
+			FVector EndTrace {StartTrace.X, StartTrace.Y, -20000};
+			// line trace Terrain
+			FHitResult Hit;
+			if (GetWorld()->LineTraceSingleByChannel(Hit, StartTrace, EndTrace, ECC_GameTraceChannel1))
 			{
-				float HalfHeight = Enemy->GetDefaultHalfHeight();
-				FVector SpawnLocation = {HitPos.X, HitPos.Y, HitPos.Z + HalfHeight};
-				FRotator SpawnRotation = {0, (PlayerLocation - SpawnLocation).ToOrientationRotator().Yaw, 0};
-				
-				Enemy->SetActorLocation(SpawnLocation);
-				Enemy->SetActorRotation(SpawnRotation);
-			});
+				int32 EnemyID = GetRandomEnemy();
+				EnemyPool->SpawnEnemyAsync(FName(*FString::FromInt(EnemyID)), {}, {}, 
+			[
+					HitPos = FVector{Hit.Location.X, Hit.Location.Y, Hit.Location.Z},
+					PlayerLocation
+				]
+					(ANormalEnemy* Enemy)
+				{
+					float HalfHeight = Enemy->GetDefaultHalfHeight();
+					FVector SpawnLocation = {HitPos.X, HitPos.Y, HitPos.Z + HalfHeight};
+					FRotator SpawnRotation = {0, (PlayerLocation - SpawnLocation).ToOrientationRotator().Yaw, 0};
+					
+					Enemy->SetActorLocation(SpawnLocation);
+					Enemy->SetActorRotation(SpawnRotation);
+				});
+			}
 		}
+		
 	}
 }
 

@@ -5,7 +5,7 @@
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemyTakeDamage, float, Damage);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnEnemyDead);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnEnemyDead, FName, EnemyID);
 
 UCLASS()
 class USiraGlobalEventSubsystem : public UGameInstanceSubsystem

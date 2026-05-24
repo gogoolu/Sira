@@ -59,6 +59,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Level")
 	int32 GetCurrentLevel() const;
 	
+	UFUNCTION(BlueprintCallable, Category = "Level")
+	int32 GetMaxLevel() const;
+	
+	float GetGameProgress() const;
+	
+	float GetGameProgressEnemyDamagePercent() const;
+	
 	// Level Stage ============
 	UFUNCTION()
 	void HandlePlayerDead();
@@ -101,7 +108,7 @@ public:
 	TSubclassOf<ADropItem> DropItemClass;
 
 private:
-	
+	int32 GetShouldGenerateEnemiesNum() const;
 	void GenerateEnemies();
 	// 根据配置以及当前关卡数，获取敌人
 	int32 GetRandomEnemy() const;

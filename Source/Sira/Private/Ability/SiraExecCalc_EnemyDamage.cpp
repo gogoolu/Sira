@@ -1,5 +1,6 @@
 ﻿#include "Ability/SiraExecCalc_EnemyDamage.h"
 
+#include "SiraGameMode.h"
 #include "SiraLog.h"
 #include "AttributeSet/BaseAttributeSet.h"
 
@@ -82,6 +83,10 @@ void USiraExecCalc_EnemyDamage::Execute_Implementation(const FGameplayEffectCust
 	UE_LOG(LogSira, Warning, TEXT("[USiraExecCalc_EnemyDamage::Execute_Implementation] Source Owner: %s, Target Owner: %s"), *SourceASC->GetOwner()->GetName(), *TargetASC->GetOwner()->GetName());
 	
 	float Damage = BaseDamage * (1.f + DamagePercent);
+	if (auto SiraGameMode = Cast<ASiraGameMode>(SourceASC->GetWorld()->GetAuthGameMode()))
+	{
+		Damage *= 1.f + SiraGameMode->GetGameProgressEnemyDamagePercent();
+	}
 	if (TargetArmor > 0.f)
 	{
 		Damage *= 1.f / (1.f + TargetArmor / 15.f);

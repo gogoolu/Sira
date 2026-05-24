@@ -20,6 +20,7 @@ class USiraEnemyPool : public UWorldSubsystem
 	GENERATED_BODY()
 	
 public:
+	int32 GetCurrentEnemiesNum() const;
 	
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
@@ -38,4 +39,6 @@ private:
 	
 	UPROPERTY()
 	TMap<int32, FEnemyGroup> Pool;
+	
+	int32 EnemiesNum = 0;
 };

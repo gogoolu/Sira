@@ -7,6 +7,7 @@
 
 #include "NormalEnemy.generated.h"
 
+class AProjectile;
 class UAttributeBillboardComponent;
 class USiraAttributeComponent;
 
@@ -31,6 +32,7 @@ public:
 	void MeleeAttack();
 	
 	void RangedAttack();
+	void SpawnProjectile();
 	
 	UFUNCTION(BlueprintCallable)
 	bool IsAttacking() const;
@@ -78,5 +80,6 @@ private:
 	TSubclassOf<UGameplayAbility> RangedGA;
 	FGameplayAbilitySpecHandle RangedAttackSpecHandle;
 	
-	
+	UPROPERTY(EditDefaultsOnly, Category = "Enemy")
+	TSubclassOf<AProjectile> ProjectileClass;
 };

@@ -91,3 +91,21 @@ TArray<FAttributeDisplayInfo> USiraBlueprintLibrary::GetAllPlayerAttributeDispla
 	
 	return Attributes;
 }
+
+bool USiraBlueprintLibrary::IsPercentAttribute(const FGameplayAttribute& Attribute)
+{
+	if (Attribute == UPlayerAttr::GetAttackSpeedPercentAttribute())
+	{
+		return true;
+	}
+	if (Attribute == UPlayerModAttr::GetCriticalRateAttribute())
+	{
+		return true;
+	}
+	if (Attribute == UPlayerModAttr::GetDamagePercentAttribute())
+	{
+		return true;
+	}
+	
+	return false;
+}

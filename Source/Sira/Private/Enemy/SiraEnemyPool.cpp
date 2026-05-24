@@ -5,6 +5,11 @@
 #include "Enemy/NormalEnemy.h"
 #include "Manager/SiraConfigSubsystem.h"
 
+int32 USiraEnemyPool::GetCurrentEnemiesNum() const
+{
+	return EnemiesNum;
+}
+
 void USiraEnemyPool::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -27,13 +32,14 @@ ANormalEnemy* USiraEnemyPool::SpawnEnemy(const TSubclassOf<ANormalEnemy> EnemyCl
 
 	for (auto Enemy : Pool.FindOrAdd(ItemID).Enemies)
 	{
-		if (Enemy->IsHidden())
+		if (Enemy && Enemy->IsHidden())
 		{
 			Enemy->SetActorHiddenInGame(false);
 			Enemy->SetActorEnableCollision(true);
 			Enemy->SetActorLocation(SpawnLocation);
 			Enemy->SetActorRotation(SpawnRotation);
 			Enemy->InitEnemy();
+			EnemiesNum++;
 			return Enemy;
 		}
 	}
@@ -41,6 +47,7 @@ ANormalEnemy* USiraEnemyPool::SpawnEnemy(const TSubclassOf<ANormalEnemy> EnemyCl
 	if (NewEnemy)
 	{
 		Pool.FindOrAdd(ItemID).Enemies.Add(NewEnemy);
+		EnemiesNum++;
 	}
 	
 	return NewEnemy;
@@ -95,7 +102,7 @@ void USiraEnemyPool::RecycleEnemy(ANormalEnemy* Enemy)
 		Enemy->ResetGASState();
 		Enemy->SetActorHiddenInGame(true);
 		Enemy->SetActorEnableCollision(false);
-		
+		EnemiesNum--;
 		// if (!Pool[Enemy->GetEnemyID()].Enemies.Contains(Enemy))
 		// {
 		// 	Pool[Enemy->GetEnemyID()].Enemies.Add(Enemy);

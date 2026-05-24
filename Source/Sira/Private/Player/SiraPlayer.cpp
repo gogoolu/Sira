@@ -146,15 +146,6 @@ UInventoryComponent* ASiraPlayer::GetInventoryComponent() const
 	return InventoryComponent;
 }
 
-// void ASiraPlayer::Tick(float DeltaTime)
-// {
-// 	Super::Tick(DeltaTime);
-// 	if (FDateTime::Now().GetTicks() - LastSlideTime > ETimespan::TicksPerSecond)
-// 	{
-// 		SetSlidingMode(false);
-// 	}
-// }
-
 FVector ASiraPlayer::GetPlayerShootStartPoint() const
 {
 	if (PlayerCamera)
@@ -221,7 +212,6 @@ void ASiraPlayer::OnDead(FGameplayTag Tag, int32 Count)
 			PC->SetInputMode(FInputModeUIOnly());
 			PC->SetShowMouseCursor(true);
 		}
-		
 		
 		OnPlayerDead.Broadcast();
 	}

@@ -7,6 +7,7 @@
 #include "Engine/StreamableManager.h"
 #include "Manager/SiraBlueprintLibrary.h"
 #include "Manager/SiraConfigSubsystem.h"
+#include "Manager/SiraGlobalEventSubsystem.h"
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -32,9 +33,12 @@ int32 UInventoryComponent::GetItemCount(FName ItemID) const
 
 void UInventoryComponent::AddItem(FName ItemID, int32 Count)
 {
-	ApplyItemBuff(ItemID, Count);
-	Items.Add(ItemID, GetItemCount(ItemID) + Count);
-	OnInventoryItemsChanged.Broadcast();
+	if (ItemID.IsValid())
+	{
+		ApplyItemBuff(ItemID, Count);
+		Items.Add(ItemID, GetItemCount(ItemID) + Count);
+		OnInventoryItemsChanged.Broadcast();
+	}
 }
 
 void UInventoryComponent::RemoveItem(FName ItemID, int32 Count)
@@ -46,6 +50,30 @@ void UInventoryComponent::RemoveItem(FName ItemID, int32 Count)
 	}
 	OnInventoryItemsChanged.Broadcast();
 }
+
+void UInventoryComponent::SaleItem(FName ItemID)
+{
+	if (auto Count = Items.Find(ItemID))
+	{
+		if (*Count > 0)
+		{
+			AddCoins(100);
+			RemoveItem(ItemID);
+		}
+	}
+}
+
+bool UInventoryComponent::BuyItem(FName ItemID, int32 Price)
+{
+	if (Coins >= Price)
+	{
+		AddItem(ItemID);
+		AddCoins(-Price);
+		return true;
+	}
+	return false;
+}
+
 
 void UInventoryComponent::GetItemIconAsync(FName ItemID, TFunction<void(UTexture2D*)> OnLoaded)
 {
@@ -115,6 +143,22 @@ void UInventoryComponent::K2_GetItemIconAsync(FName ItemID, FOnInventoryIconLoad
 	{
 		OnLoaded.ExecuteIfBound(LoadedIcon);
 	});
+}
+
+void UInventoryComponent::BeginPlay()
+{
+	Super::BeginPlay();
+	auto GlobalEvents = GetWorld()->GetGameInstance()->GetSubsystem<USiraGlobalEventSubsystem>();
+	GlobalEvents->OnEnemyDead.AddDynamic(this, &ThisClass::HandleEnemyDead);
+}
+
+void UInventoryComponent::HandleEnemyDead(FName EnemyID)
+{
+	auto Config = GetWorld()->GetGameInstance()->GetSubsystem<USiraConfigSubsystem>();
+	if (auto EnemyConfig = Config->GetEnemyConfig(EnemyID))
+	{
+		AddCoins(EnemyConfig->DropCoins);
+	}
 }
 
 void UInventoryComponent::ApplyItemBuff(FName ItemID, int32 Count)

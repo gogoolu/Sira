@@ -40,15 +40,17 @@ void UEnemyAttr::PostGameplayEffectExecute(const FGameplayEffectModCallbackData&
 						GameMode->ShowDamageNumber(Damage, DamageNumberLocation);
 					}
 					Enemy->TriggerUpdateAttributeBar();
+					
+					if (FMath::IsNearlyZero(GetHP()) && !ASC->HasMatchingGameplayTag(SiraGameplayTags::TAG_LifeState_Dead))
+					{
+						// 敌人死亡
+						GlobalEventSubsystem->OnEnemyDead.Broadcast(FName(*FString::FromInt(Enemy->GetEnemyID())));
+						ASC->AddLooseGameplayTag(SiraGameplayTags::TAG_LifeState_Dead);
+					}
 				}
 			}
 			
-			if (FMath::IsNearlyZero(GetHP()) && !ASC->HasMatchingGameplayTag(SiraGameplayTags::TAG_LifeState_Dead))
-			{
-				// 敌人死亡
-				GlobalEventSubsystem->OnEnemyDead.Broadcast();
-				ASC->AddLooseGameplayTag(SiraGameplayTags::TAG_LifeState_Dead);
-			}
+			
 		}
 	} else if (Data.EvaluatedData.Attribute == GetMaxHPAttribute())
 	{

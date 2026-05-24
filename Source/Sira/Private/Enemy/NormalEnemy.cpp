@@ -3,17 +3,21 @@
 
 #include "Enemy/NormalEnemy.h"
 
+#include "SiraLog.h"
 #include "AttributeSet/BaseAttributeSet.h"
 #include "Component/AttributeBillboardComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Enemy/SiraAIController.h"
 #include "Enemy/SiraEnemyPool.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Manager/Pool.h"
+#include "Manager/SiraBlueprintLibrary.h"
 #include "Manager/SiraConfigSubsystem.h"
 #include "Manager/SiraGameplayTags.h"
 #include "Runtime/AIModule/Classes/AIController.h"
 #include "Runtime/AIModule/Classes/BrainComponent.h"
+#include "SiraGamePlay/Projectile.h"
 
 // Sets default values
 ANormalEnemy::ANormalEnemy()
@@ -57,6 +61,30 @@ void ANormalEnemy::RangedAttack()
 {
 	// OnRangedAttackFinished.AddLambda(MoveTemp(Callback));
 	AbilitySystemComponent->TryActivateAbility(RangedAttackSpecHandle);
+	SpawnProjectile();
+}
+
+void ANormalEnemy::SpawnProjectile()
+{
+	if (!ProjectileClass)
+	{
+		return;
+	}
+	if (auto Player = UGameplayStatics::GetPlayerPawn(GetWorld(), 0))
+	{
+		FActorSpawnParameters Parameters;
+		Parameters.Owner = this;
+		Parameters.Instigator = this;
+		Parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		auto Direction = Player->GetActorLocation() - GetActorLocation();
+		
+		auto ProjectilePool = GetWorld()->GetSubsystem<UProjectilePool>();
+		if (auto Projectile = ProjectilePool->Get(ProjectileClass, Parameters, GetActorLocation(), Direction.ToOrientationRotator()))
+		{
+			Projectile->SetProjectileVelocity(Direction.GetSafeNormal() * 2000.f);
+			Projectile->SetTag(SiraGameplayTags::TAG_Character_Enemy);
+		}
+	}
 }
 
 bool ANormalEnemy::IsAttacking() const
@@ -99,14 +127,6 @@ void ANormalEnemy::OnDead(FGameplayTag Tag, int32 Count)
 {
 	if (Count > 0)
 	{
-		if (AAIController* AIController = Cast<AAIController>(GetOwner()))
-		{
-			if (UBrainComponent* BrainComp = AIController->GetBrainComponent())
-			{
-				BrainComp->StopLogic("Death");
-			}
-		}
-		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 		DropItem();
 		Die();
 	}
@@ -114,12 +134,21 @@ void ANormalEnemy::OnDead(FGameplayTag Tag, int32 Count)
 
 void ANormalEnemy::Die()
 {
+	if (AAIController* AIController = Cast<AAIController>(GetOwner()))
+	{
+		if (UBrainComponent* BrainComp = AIController->GetBrainComponent())
+		{
+			BrainComp->StopLogic("Death");
+		}
+	}
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	auto EnemyPool = GetWorld()->GetSubsystem<USiraEnemyPool>();
 	EnemyPool->RecycleEnemy(this);
 }
 
 void ANormalEnemy::InitEnemy()
 {
+	ResetGASState();
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	GiveStartAbilities();
 	
@@ -159,7 +188,6 @@ void ANormalEnemy::ResetGASState()
 			AbilitySystemComponent->RemoveLooseGameplayTag(Tag);
 		}
 	}
-	
 	for (auto& [StartAttributeSet, StartingTable] : AbilitySystemComponent->DefaultStartingData)
 	{
 		AbilitySystemComponent->InitStats(StartAttributeSet, StartingTable);

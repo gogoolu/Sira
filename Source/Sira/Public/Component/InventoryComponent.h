@@ -34,6 +34,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void RemoveItem(FName ItemID, int32 Count = 1);
 	
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void SaleItem(FName ItemID);
+	
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	bool BuyItem(FName ItemID, int32 Price);
+	
 	UFUNCTION(BlueprintCallable, Category = "Inventory", DisplayName = "GetItemIconAsync")
 	void K2_GetItemIconAsync(FName ItemID, FOnInventoryIconLoaded Loaded);
 	
@@ -49,6 +55,10 @@ public:
 	FInventoryItemsChanged OnInventoryItemsChanged;
 	
 private:
+	virtual void BeginPlay() override;
+	
+	UFUNCTION()
+	void HandleEnemyDead(FName EnemyID);
 	
 	void ApplyItemBuff(FName ItemID, int32 Count);
 	void RemoveItemBuff(FName ItemID, int32 Count);
