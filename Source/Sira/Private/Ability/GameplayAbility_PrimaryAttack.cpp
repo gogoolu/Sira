@@ -92,6 +92,14 @@ void UGameplayAbility_PrimaryAttack::Shoot(const FVector& StartLocation, const F
 				{
 					break;
 				}
+				if (ImpactEmitter)
+				{
+					UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), 
+						ImpactEmitter,
+						Hit.ImpactPoint,
+						Hit.Normal.ToOrientationRotator()
+					);
+				} 
 			
 				UGameplayEffect* HitGE = HitGEClass->GetDefaultObject<UGameplayEffect>();
 				SourceASC->ApplyGameplayEffectToTarget(HitGE, HitEnemy->AbilitySystemComponent);

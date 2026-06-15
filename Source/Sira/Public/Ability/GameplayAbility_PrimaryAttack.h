@@ -37,5 +37,8 @@ private:
 	TObjectPtr<UNiagaraSystem> TrailNiagara;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "Sira")
+	TObjectPtr<UParticleSystem> ImpactEmitter;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Sira")
 	TArray<TObjectPtr<USoundWave>> ShotSounds;
 };
